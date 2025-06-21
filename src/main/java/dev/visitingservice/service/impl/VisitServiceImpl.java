@@ -107,6 +107,14 @@ public class VisitServiceImpl implements VisitService {
         return updateVisitStatus(visitId, Status.COMPLETED);
     }
 
+    private boolean isAllowedTransition(Status from, Status to) {
+        return switch (from) {
+            case PENDING -> to == Status.APPROVED || to == Status.REJECTED || to == Status.CANCELLED || to == Status.RESCHEDULED;
+            case APPROVED -> to == Status.COMPLETED || to == Status.CANCELLED || to == Status.RESCHEDULED;
+            case RESCHEDULED -> to == Status.APPROVED || to == Status.REJECTED || to == Status.CANCELLED;
+            default -> false;
+        };
+    }
 
     @Override
     @Transactional
@@ -114,8 +122,8 @@ public class VisitServiceImpl implements VisitService {
         Visit visit = visitRepository.findById(visitId)
                 .orElseThrow(() -> new IllegalArgumentException("Visit not found"));
 
-        if (visit.getStatus().isTerminal()) {
-            throw new IllegalStateException("Cannot modify a visit that is already " + visit.getStatus());
+        if (!isAllowedTransition(visit.getStatus(), newStatus)) {
+            throw new IllegalStateException("Cannot change status from " + visit.getStatus() + " to " + newStatus);
         }
 
         if (newStatus == Status.APPROVED) {
@@ -127,26 +135,21 @@ public class VisitServiceImpl implements VisitService {
 
         switch (newStatus) {
             case APPROVED -> notificationPublisher.sendVisitApproved(updated);
-
             case REJECTED -> {
                 releaseSlotIfExists(visit);
                 notificationPublisher.sendVisitRejected(updated);
             }
-
             case CANCELLED -> {
                 releaseSlotIfExists(visit);
                 notificationPublisher.sendVisitCancelled(updated);
             }
-
             case COMPLETED -> notificationPublisher.sendFeedbackPrompt(updated);
-            default -> {
-            }
+            default -> {}
         }
 
         return updated;
     }
 
-  
 
     @Override
     public List<Visit> getVisitsByProperty(UUID propertyId) {

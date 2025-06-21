@@ -17,4 +17,7 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
 
     // ✅ Add this line below
     List<AvailabilitySlot> findByPropertyIdAndLandlordIdAndStartTimeAfterAndBookedFalse(UUID propertyId, UUID landlordId, OffsetDateTime after);
+
+    // Method for calendar view
+    List<AvailabilitySlot> findByPropertyIdAndStartTimeGreaterThanEqualAndEndTimeLessThanEqual(UUID propertyId, OffsetDateTime start, OffsetDateTime end);
 }

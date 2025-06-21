@@ -219,4 +219,213 @@ public class NotificationPublisherImpl implements NotificationPublisher {
     public void sendFeedbackPrompt(Visit visit) {
         sendEvent("FEEDBACK_PROMPT", visit, null);
     }
+
+    // --- Shortlet Booking Notification Methods ---
+    @Override
+    public void sendBookingCreated(dev.visitingservice.model.ShortletBooking booking) {
+        sendBookingEvent("BOOKING_CREATED", booking);
+    }
+
+    @Override
+    public void sendBookingAccepted(dev.visitingservice.model.ShortletBooking booking) {
+        sendBookingEvent("BOOKING_ACCEPTED", booking);
+    }
+
+    @Override
+    public void sendBookingRejected(dev.visitingservice.model.ShortletBooking booking) {
+        sendBookingEvent("BOOKING_REJECTED", booking);
+    }
+
+    @Override
+    public void sendBookingCancelled(dev.visitingservice.model.ShortletBooking booking) {
+        sendBookingEvent("BOOKING_CANCELLED", booking);
+    }
+
+    @Override
+    public void sendBookingRescheduled(dev.visitingservice.model.ShortletBooking booking) {
+        sendBookingEvent("BOOKING_RESCHEDULED", booking);
+    }
+
+    private void sendBookingEvent(String type, dev.visitingservice.model.ShortletBooking booking) {
+        String subject = getBookingSubject(type);
+        UUID[] recipients = getBookingRecipients(booking);
+        for (UUID userId : recipients) {
+            String recipientEmail = userClient.getUserEmail(userId);
+            if (recipientEmail != null) {
+                String content = getBookingContent(type, booking, userId);
+                emailService.sendEmail(recipientEmail, subject, content);
+                logger.info("Booking email sent to {} for event type: {}", recipientEmail, type);
+            } else {
+                logger.warn("Unable to resolve email for user {} — skipping booking notification.", userId);
+            }
+        }
+    }
+
+    private String getBookingSubject(String type) {
+        return switch (type) {
+            case "BOOKING_CREATED" -> "ZenNest: New Booking Request";
+            case "BOOKING_ACCEPTED" -> "ZenNest: Your Booking is Confirmed!";
+            case "BOOKING_REJECTED" -> "ZenNest: Booking Request Rejected";
+            case "BOOKING_CANCELLED" -> "ZenNest: Booking Cancelled";
+            case "BOOKING_RESCHEDULED" -> "ZenNest: Booking Dates Changed";
+            default -> "ZenNest Booking Notification";
+        };
+    }
+
+    private UUID[] getBookingRecipients(dev.visitingservice.model.ShortletBooking booking) {
+        return new UUID[]{booking.getTenantId(), booking.getLandlordId()};
+    }
+
+    private String getBookingContent(String type, dev.visitingservice.model.ShortletBooking booking, UUID recipientId) {
+        boolean isTenant = recipientId.equals(booking.getTenantId());
+        String propertyTitle = "your property";
+        try {
+            dev.visitingservice.client.ListingDto listing = listingClient.getListing(booking.getPropertyId());
+            if (listing != null && listing.getTitle() != null) {
+                propertyTitle = listing.getTitle();
+            }
+        } catch (Exception ignored) {}
+        String start = booking.getStartDate().format(java.time.format.DateTimeFormatter.ofPattern("EEEE, MMM d, yyyy"));
+        String end = booking.getEndDate().format(java.time.format.DateTimeFormatter.ofPattern("EEEE, MMM d, yyyy"));
+        int nights = (int) (java.time.temporal.ChronoUnit.DAYS.between(booking.getStartDate(), booking.getEndDate()));
+        String tenantName = "your guest";
+        String landlordName = "the landlord";
+        try {
+            var tenant = userClient.getUser(booking.getTenantId());
+            if (tenant != null && tenant.getFirstName() != null) {
+                tenantName = tenant.getFirstName();
+                if (tenant.getLastName() != null) tenantName += " " + tenant.getLastName();
+            }
+            var landlord = userClient.getUser(booking.getLandlordId());
+            if (landlord != null && landlord.getFirstName() != null) {
+                landlordName = landlord.getFirstName();
+                if (landlord.getLastName() != null) landlordName += " " + landlord.getLastName();
+            }
+        } catch (Exception ignored) {}
+        return switch (type) {
+            case "BOOKING_CREATED" -> isTenant
+                ? String.format("""
+                    <h2>Booking Request Submitted</h2>
+                    <p>Hi %s,</p>
+                    <p>Your booking request for <b>%s</b> from <b>%s</b> to <b>%s</b> (%d night%s) has been sent to %s. We will notify you once the landlord responds.</p>
+                    <p>Thank you for choosing ZenNest!</p>
+                    """, tenantName, propertyTitle, start, end, nights, nights == 1 ? "" : "s", landlordName)
+                : String.format("""
+                    <h2>New Booking Request</h2>
+                    <p>Hello %s,</p>
+                    <p>You have received a new booking request for <b>%s</b> from <b>%s</b> to <b>%s</b> (%d night%s) from %s.</p>
+                    <p>Please review and respond at your earliest convenience.</p>
+                    """, landlordName, propertyTitle, start, end, nights, nights == 1 ? "" : "s", tenantName);
+            case "BOOKING_ACCEPTED" -> isTenant
+                ? String.format("""
+                    <h2>Your Booking is Confirmed!</h2>
+                    <p>Hi %s,</p>
+                    <p>Great news! Your booking for <b>%s</b> from <b>%s</b> to <b>%s</b> (%d night%s) has been accepted by %s.</p>
+                    <p>Please set a reminder for your upcoming stay. We look forward to hosting you!</p>
+                    """, tenantName, propertyTitle, start, end, nights, nights == 1 ? "" : "s", landlordName)
+                : String.format("""
+                    <h2>Booking Accepted</h2>
+                    <p>Hello %s,</p>
+                    <p>You have accepted a booking for <b>%s</b> from <b>%s</b> to <b>%s</b> (%d night%s) for %s.</p>
+                    <p>The guest has been notified and is looking forward to their stay.</p>
+                    """, landlordName, propertyTitle, start, end, nights, nights == 1 ? "" : "s", tenantName);
+            case "BOOKING_REJECTED" -> isTenant
+                ? String.format("""
+                    <h2>Booking Request Not Accepted</h2>
+                    <p>Hi %s,</p>
+                    <p>Unfortunately, your booking request for <b>%s</b> from <b>%s</b> to <b>%s</b> was not accepted by %s.</p>
+                    <p>You can explore other available dates or properties on ZenNest.</p>
+                    """, tenantName, propertyTitle, start, end, landlordName)
+                : String.format("""
+                    <h2>Booking Rejected</h2>
+                    <p>Hello %s,</p>
+                    <p>You have rejected a booking request for <b>%s</b> from <b>%s</b> to <b>%s</b> from %s.</p>
+                    <p>The guest has been notified.</p>
+                    """, landlordName, propertyTitle, start, end, tenantName);
+            case "BOOKING_CANCELLED" -> isTenant
+                ? String.format("""
+                    <h2>Booking Cancelled</h2>
+                    <p>Hi %s,</p>
+                    <p>Your booking for <b>%s</b> from <b>%s</b> to <b>%s</b> has been cancelled. If you have any questions, please contact us or the landlord directly.</p>
+                    <p>We hope to host you in the future!</p>
+                    """, tenantName, propertyTitle, start, end)
+                : String.format("""
+                    <h2>Booking Cancelled</h2>
+                    <p>Hello %s,</p>
+                    <p>You have cancelled a booking for <b>%s</b> from <b>%s</b> to <b>%s</b> for %s.</p>
+                    <p>The guest has been notified.</p>
+                    """, landlordName, propertyTitle, start, end, tenantName);
+            case "BOOKING_RESCHEDULED" -> isTenant
+                ? String.format("""
+                    <h2>Your Booking Has Been Rescheduled</h2>
+                    <p>Hi %s,</p>
+                    <p>Your booking for <b>%s</b> has been rescheduled. Please find the new dates below:</p>
+                    <p><b>New Dates:</b> %s to %s</p>
+                    <p>If you have any questions, feel free to contact us.</p>
+                    """, tenantName, propertyTitle, start, end)
+                : String.format("""
+                    <h2>Booking Rescheduled</h2>
+                    <p>Hello %s,</p>
+                    <p>The booking for <b>%s</b> has been rescheduled. Please note the new dates:</p>
+                    <p><b>New Dates:</b> %s to %s</p>
+                    <p>If you have any questions, feel free to contact us.</p>
+                    """, landlordName, propertyTitle, start, end);
+            default -> "ZenNest Booking Notification";
+        };
+    }
+
+    @Override
+    public void sendBookingReminder(dev.visitingservice.model.ShortletBooking booking, int hoursBefore) {
+        String subject = "ZenNest: Upcoming Stay Reminder";
+        UUID[] recipients = getBookingRecipients(booking);
+        for (UUID userId : recipients) {
+            String recipientEmail = userClient.getUserEmail(userId);
+            if (recipientEmail != null) {
+                String content = getBookingReminderContent(booking, userId, hoursBefore);
+                emailService.sendEmail(recipientEmail, subject, content);
+                logger.info("Booking reminder email sent to {} for booking {} ({} hours before)", recipientEmail, booking.getId(), hoursBefore);
+            } else {
+                logger.warn("Unable to resolve email for user {} — skipping booking reminder.", userId);
+            }
+        }
+    }
+
+    private String getBookingReminderContent(dev.visitingservice.model.ShortletBooking booking, UUID recipientId, int hoursBefore) {
+        boolean isTenant = recipientId.equals(booking.getTenantId());
+        String propertyTitle = "your property";
+        try {
+            dev.visitingservice.client.ListingDto listing = listingClient.getListing(booking.getPropertyId());
+            if (listing != null && listing.getTitle() != null) {
+                propertyTitle = listing.getTitle();
+            }
+        } catch (Exception ignored) {}
+        String start = booking.getStartDate().format(java.time.format.DateTimeFormatter.ofPattern("EEEE, MMM d, yyyy"));
+        String tenantName = "your guest";
+        String landlordName = "the landlord";
+        try {
+            var tenant = userClient.getUser(booking.getTenantId());
+            if (tenant != null && tenant.getFirstName() != null) {
+                tenantName = tenant.getFirstName();
+                if (tenant.getLastName() != null) tenantName += " " + tenant.getLastName();
+            }
+            var landlord = userClient.getUser(booking.getLandlordId());
+            if (landlord != null && landlord.getFirstName() != null) {
+                landlordName = landlord.getFirstName();
+                if (landlord.getLastName() != null) landlordName += " " + landlord.getLastName();
+            }
+        } catch (Exception ignored) {}
+        return isTenant
+            ? String.format("""
+                <h2>Upcoming Stay Reminder</h2>
+                <p>Hi %s,</p>
+                <p>This is a friendly reminder that your stay at <b>%s</b> begins on <b>%s</b> (in about %d hour%s).</p>
+                <p>We look forward to welcoming you!</p>
+                """, tenantName, propertyTitle, start, hoursBefore, hoursBefore == 1 ? "" : "s")
+            : String.format("""
+                <h2>Upcoming Guest Arrival</h2>
+                <p>Hello %s,</p>
+                <p>Your guest %s is scheduled to arrive at <b>%s</b> on <b>%s</b> (in about %d hour%s).</p>
+                <p>Please ensure the property is ready for their stay.</p>
+                """, landlordName, tenantName, propertyTitle, start, hoursBefore, hoursBefore == 1 ? "" : "s");
+    }
 }

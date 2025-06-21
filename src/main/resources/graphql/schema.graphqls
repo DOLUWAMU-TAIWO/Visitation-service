@@ -1,0 +1,160 @@
+type Query {
+    # Availability queries
+    availabilitySlots(propertyId: ID!, from: String, to: String): [AvailabilitySlot!]!
+
+    # Booking queries
+    booking(id: ID!): Booking
+    bookings(filter: BookingFilter): [Booking!]!
+    calendar(propertyId: ID!, from: String!, to: String!): CalendarView!
+
+    # Visit queries
+    visit(id: ID!): Visit
+    visits(filter: VisitFilter): [Visit!]!
+    visitsByProperty(propertyId: ID!): [Visit!]!
+    visitsByVisitor(visitorId: ID!): [Visit!]!
+    visitsByLandlord(landlordId: ID!): [Visit!]!
+
+    # User queries - can be expanded based on needs
+    tenant(id: ID!): User
+    landlord(id: ID!): User
+}
+
+type Mutation {
+    # Availability mutations
+    createAvailabilitySlot(input: AvailabilitySlotInput!): AvailabilitySlot!
+    deleteAvailabilitySlot(id: ID!): Boolean!
+
+    # Booking mutations
+    createBooking(input: BookingInput!): Booking!
+    acceptBooking(id: ID!): Booking!
+    rejectBooking(id: ID!): Booking!
+    cancelBooking(id: ID!): Booking!
+    rescheduleBooking(id: ID!, startDate: String!, endDate: String!): Booking!
+
+    # Visit mutations
+    requestVisit(input: VisitInput!): Visit!
+    approveVisit(id: ID!): Visit!
+    rejectVisit(id: ID!): Visit!
+    cancelVisit(id: ID!): Visit!
+    completeVisit(id: ID!): Visit!
+}
+
+# Input types
+input AvailabilitySlotInput {
+    propertyId: ID!
+    landlordId: ID!
+    date: String!
+    startTime: String!
+    endTime: String!
+    intervalMinutes: Int
+}
+
+input BookingInput {
+    tenantId: ID!
+    landlordId: ID!
+    propertyId: ID!
+    startDate: String!
+    endDate: String!
+}
+
+input VisitInput {
+    propertyId: ID!
+    visitorId: ID!
+    landlordId: ID!
+    scheduledDate: String!
+    status: VisitStatus
+}
+
+input BookingFilter {
+    tenantId: ID
+    landlordId: ID
+    propertyId: ID
+    status: BookingStatus
+    fromDate: String
+    toDate: String
+    page: Int
+    size: Int
+}
+
+input VisitFilter {
+    visitorId: ID
+    landlordId: ID
+    propertyId: ID
+    status: VisitStatus
+    fromDate: String
+    toDate: String
+    page: Int
+    size: Int
+}
+
+# Object types
+type AvailabilitySlot {
+    id: ID!
+    propertyId: ID!
+    landlordId: ID!
+    startTime: String!
+    endTime: String!
+    booked: Boolean!
+}
+
+type Booking {
+    id: ID!
+    tenantId: ID!
+    landlordId: ID!
+    propertyId: ID!
+    tenant: User
+    landlord: User
+    property: Property
+    startDate: String!
+    endDate: String!
+    status: BookingStatus!
+    nights: Int!
+}
+
+type Visit {
+    id: ID!
+    propertyId: ID!
+    visitorId: ID!
+    landlordId: ID!
+    scheduledDate: String!
+    status: VisitStatus!
+}
+
+type User {
+    id: ID!
+    firstName: String
+    lastName: String
+    email: String
+    phone: String
+}
+
+type Property {
+    id: ID!
+    title: String
+    description: String
+    address: String
+    imageUrl: String
+}
+
+type CalendarView {
+    slots: [AvailabilitySlot!]!
+    bookings: [Booking!]!
+}
+
+# Enums
+enum BookingStatus {
+    PENDING
+    ACCEPTED
+    REJECTED
+    CANCELLED
+    RESCHEDULED
+}
+
+enum VisitStatus {
+    PENDING
+    APPROVED
+    REJECTED
+    CANCELLED
+    COMPLETED
+    RESCHEDULED
+}

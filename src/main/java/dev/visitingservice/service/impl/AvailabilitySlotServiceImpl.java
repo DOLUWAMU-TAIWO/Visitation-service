@@ -10,6 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -56,5 +62,37 @@ public class AvailabilitySlotServiceImpl implements AvailabilitySlotService {
     public boolean isSlotAvailable(UUID propertyId, OffsetDateTime start, OffsetDateTime end) {
         return repository.existsByPropertyIdAndStartTimeLessThanEqualAndEndTimeGreaterThanEqualAndBookedFalse(
                 propertyId, start, end);
+    }
+
+    @Override
+    public List<AvailabilitySlot> createSlotsForRange(UUID propertyId, UUID landlordId, LocalDate date, LocalTime startTime, LocalTime endTime, Integer intervalMinutes) {
+        if (intervalMinutes == null || intervalMinutes <= 0) intervalMinutes = 60;
+        if (startTime == null || endTime == null || !startTime.isBefore(endTime)) {
+            throw new IllegalArgumentException("Start time must be before end time");
+        }
+        ZoneId nigeriaZone = ZoneId.of("Africa/Lagos");
+        ZonedDateTime startZdt = ZonedDateTime.of(date, startTime, nigeriaZone);
+        ZonedDateTime endZdt = ZonedDateTime.of(date, endTime, nigeriaZone);
+        List<AvailabilitySlot> createdSlots = new ArrayList<>();
+        ZonedDateTime slotStart = startZdt;
+        while (slotStart.plusMinutes(intervalMinutes).compareTo(endZdt) <= 0) {
+            ZonedDateTime slotEnd = slotStart.plusMinutes(intervalMinutes);
+            OffsetDateTime slotStartUtc = slotStart.withZoneSameInstant(ZoneId.of("UTC")).toOffsetDateTime();
+            OffsetDateTime slotEndUtc = slotEnd.withZoneSameInstant(ZoneId.of("UTC")).toOffsetDateTime();
+            // Check for overlap
+            boolean overlap = repository.existsByPropertyIdAndStartTimeLessThanAndEndTimeGreaterThan(
+                propertyId, slotEndUtc, slotStartUtc);
+            if (!overlap) {
+                AvailabilitySlot slot = new AvailabilitySlot();
+                slot.setPropertyId(propertyId);
+                slot.setLandlordId(landlordId);
+                slot.setStartTime(slotStartUtc);
+                slot.setEndTime(slotEndUtc);
+                slot.setBooked(false);
+                createdSlots.add(repository.save(slot));
+            }
+            slotStart = slotEnd;
+        }
+        return createdSlots;
     }
 }
