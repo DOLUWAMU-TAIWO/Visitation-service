@@ -45,11 +45,21 @@ public class ShortletBookingServiceImpl implements ShortletBookingService {
         if (startDate.isAfter(endDate)) {
             throw new IllegalArgumentException("startDate must be before endDate");
         }
-        // Check if the requested dates are available
-        List<ShortletAvailability> availabilities = availabilityRepository.findByLandlordId(landlordId);
+        // Check if the requested dates are available for this property and landlord
+        List<ShortletAvailability> availabilities = availabilityRepository.findByLandlordIdAndPropertyId(landlordId, propertyId);
         boolean available = availabilities.stream().anyMatch(a -> !a.getStartDate().isAfter(startDate) && !a.getEndDate().isBefore(endDate));
         if (!available) {
             throw new IllegalArgumentException("Requested dates are not available for booking");
+        }
+        // Check for overlapping bookings for this property
+        boolean alreadyBooked = bookingRepository.findByLandlordId(landlordId).stream()
+                .filter(b -> b.getPropertyId().equals(propertyId))
+                .anyMatch(b ->
+                        (b.getStartDate().isBefore(endDate) && b.getEndDate().isAfter(startDate)) &&
+                        (b.getStatus() == BookingStatus.ACCEPTED)
+                );
+        if (alreadyBooked) {
+            throw new IllegalArgumentException("Requested dates are already booked for this property");
         }
         // Idempotency: check if a booking with same details already exists and is pending
         Optional<ShortletBooking> existing = bookingRepository.findByLandlordId(landlordId).stream()
@@ -104,7 +114,7 @@ public class ShortletBookingServiceImpl implements ShortletBookingService {
             throw new IllegalStateException("Cannot accept booking from status " + booking.getStatus());
         }
         // Block the dates by removing the availability slot that covers this booking
-        List<ShortletAvailability> availabilities = availabilityRepository.findByLandlordId(booking.getLandlordId());
+        List<ShortletAvailability> availabilities = availabilityRepository.findByLandlordIdAndPropertyId(booking.getLandlordId(), booking.getPropertyId());
         Optional<ShortletAvailability> covering = availabilities.stream()
                 .filter(a -> !a.getStartDate().isAfter(booking.getStartDate()) && !a.getEndDate().isBefore(booking.getEndDate()))
                 .findFirst();
@@ -116,6 +126,7 @@ public class ShortletBookingServiceImpl implements ShortletBookingService {
         if (availability.getStartDate().isBefore(booking.getStartDate())) {
             ShortletAvailability before = new ShortletAvailability();
             before.setLandlordId(availability.getLandlordId());
+            before.setPropertyId(availability.getPropertyId());
             before.setStartDate(availability.getStartDate());
             before.setEndDate(booking.getStartDate().minusDays(1));
             availabilityRepository.save(before);
@@ -123,6 +134,7 @@ public class ShortletBookingServiceImpl implements ShortletBookingService {
         if (availability.getEndDate().isAfter(booking.getEndDate())) {
             ShortletAvailability after = new ShortletAvailability();
             after.setLandlordId(availability.getLandlordId());
+            after.setPropertyId(availability.getPropertyId());
             after.setStartDate(booking.getEndDate().plusDays(1));
             after.setEndDate(availability.getEndDate());
             availabilityRepository.save(after);
@@ -130,6 +142,18 @@ public class ShortletBookingServiceImpl implements ShortletBookingService {
         availabilityRepository.deleteById(availability.getId());
         booking.setStatus(BookingStatus.ACCEPTED);
         bookingRepository.save(booking);
+        // Reject all other overlapping PENDING bookings for the same property and date range
+        List<ShortletBooking> overlappingPending = bookingRepository.findByLandlordId(booking.getLandlordId()).stream()
+                .filter(b -> b.getPropertyId().equals(booking.getPropertyId()))
+                .filter(b -> b.getStatus() == BookingStatus.PENDING)
+                .filter(b -> b.getId() != booking.getId())
+                .filter(b -> b.getStartDate().isBefore(booking.getEndDate()) && b.getEndDate().isAfter(booking.getStartDate()))
+                .collect(Collectors.toList());
+        for (ShortletBooking pending : overlappingPending) {
+            pending.setStatus(BookingStatus.REJECTED);
+            bookingRepository.save(pending);
+            notificationPublisher.sendBookingRejected(pending);
+        }
         notificationPublisher.sendBookingAccepted(booking);
         return toDTO(booking);
     }

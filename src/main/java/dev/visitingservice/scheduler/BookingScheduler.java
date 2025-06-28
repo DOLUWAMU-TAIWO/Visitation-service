@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,12 +24,14 @@ public class BookingScheduler {
         this.notificationPublisher = notificationPublisher;
     }
 
-    // Runs every minute for testing
-    @Scheduled(cron = "0 * * * * *")
+    // Runs every 2 hours
+    @Scheduled(cron = "0 0 */2 * * *")
     public void sendUpcomingBookingReminders() {
-        LocalDate now = LocalDate.now();
-        LocalDate in24h = now.plusDays(1);
-        LocalDate in1h = now.plusDays(0); // For demo, treat today as 'soon'
+        ZoneId nigeriaZone = ZoneId.of("Africa/Lagos");
+        ZonedDateTime now = ZonedDateTime.now(nigeriaZone);
+        LocalDate today = now.toLocalDate();
+        LocalDate in24h = today.plusDays(1);
+        LocalDate in1h = today; // For demo, treat today as 'soon'
 
         sendReminderForWindow(in24h, 24);
         sendReminderForWindow(in1h, 1);
@@ -38,7 +42,15 @@ public class BookingScheduler {
                 .filter(b -> b.getStatus() == BookingStatus.ACCEPTED && b.getStartDate().equals(date))
                 .toList();
         for (ShortletBooking booking : bookings) {
-            notificationPublisher.sendBookingReminder(booking, hoursBefore);
+            if (hoursBefore == 24 && !booking.isReminder24hSent()) {
+                notificationPublisher.sendBookingReminder(booking, 24);
+                booking.setReminder24hSent(true);
+                bookingRepository.save(booking);
+            } else if (hoursBefore == 1 && !booking.isReminder1hSent()) {
+                notificationPublisher.sendBookingReminder(booking, 1);
+                booking.setReminder1hSent(true);
+                bookingRepository.save(booking);
+            }
         }
     }
 
@@ -55,5 +67,14 @@ public class BookingScheduler {
             // You can calculate hoursBefore or set a default (e.g., 1)
             notificationPublisher.sendBookingReminder(booking, 1);
         }
+    }
+
+    // Test method: send a reminder at 13:00 (1pm) Lagos time
+    @Scheduled(cron = "0 0 13 * * *")
+    public void sendTestReminderAt1pmLagos() {
+        ZoneId nigeriaZone = ZoneId.of("Africa/Lagos");
+        ZonedDateTime now = ZonedDateTime.now(nigeriaZone);
+        System.out.println("[TEST] sendTestReminderAt1pmLagos triggered at: " + now);
+        // Optionally, send a test notification or log to verify time alignment
     }
 }

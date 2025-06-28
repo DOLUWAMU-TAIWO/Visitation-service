@@ -7,6 +7,8 @@ public class ShortletAvailabilityDTO {
     private UUID id;
     private LocalDate startDate;
     private LocalDate endDate;
+    private UUID propertyId;
+    private UUID landlordId;
 
     public UUID getId() {
         return id;
@@ -30,5 +32,21 @@ public class ShortletAvailabilityDTO {
 
     public void setEndDate(LocalDate endDate) {
         this.endDate = endDate;
+    }
+
+    public UUID getPropertyId() {
+        return propertyId;
+    }
+
+    public void setPropertyId(UUID propertyId) {
+        this.propertyId = propertyId;
+    }
+
+    public UUID getLandlordId() {
+        return landlordId;
+    }
+
+    public void setLandlordId(UUID landlordId) {
+        this.landlordId = landlordId;
     }
 }

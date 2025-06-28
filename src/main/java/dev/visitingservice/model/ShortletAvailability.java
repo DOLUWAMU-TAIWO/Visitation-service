@@ -6,7 +6,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "shortlet_availability", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"landlord_id", "start_date", "end_date"})
+        @UniqueConstraint(columnNames = {"landlord_id", "property_id", "start_date", "end_date"})
 })
 public class ShortletAvailability {
     @Id
@@ -15,6 +15,9 @@ public class ShortletAvailability {
 
     @Column(name = "landlord_id", nullable = false)
     private UUID landlordId;
+
+    @Column(name = "property_id", nullable = false)
+    private UUID propertyId;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
@@ -34,6 +37,12 @@ public class ShortletAvailability {
     }
     public void setLandlordId(UUID landlordId) {
         this.landlordId = landlordId;
+    }
+    public UUID getPropertyId() {
+        return propertyId;
+    }
+    public void setPropertyId(UUID propertyId) {
+        this.propertyId = propertyId;
     }
     public LocalDate getStartDate() {
         return startDate;

@@ -12,5 +12,6 @@ import java.util.UUID;
 public interface ShortletAvailabilityRepository extends JpaRepository<ShortletAvailability, UUID> {
     List<ShortletAvailability> findByLandlordId(UUID landlordId);
     boolean existsByLandlordIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(UUID landlordId, LocalDate endDate, LocalDate startDate);
+    List<ShortletAvailability> findByLandlordIdAndPropertyId(UUID landlordId, UUID propertyId);
+    boolean existsByLandlordIdAndPropertyIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(UUID landlordId, UUID propertyId, LocalDate endDate, LocalDate startDate);
 }
-

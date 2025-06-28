@@ -30,18 +30,19 @@ public class ShortletUnifiedController {
     @PostMapping("/availability/{landlordId}")
     public ResponseEntity<?> setAvailability(@PathVariable UUID landlordId, @RequestBody Map<String, String> body) {
         try {
+            UUID propertyId = UUID.fromString(body.get("propertyId"));
             LocalDate startDate = LocalDate.parse(body.get("startDate"));
             LocalDate endDate = LocalDate.parse(body.get("endDate"));
-            ShortletAvailabilityDTO dto = availabilityService.setAvailability(landlordId, startDate, endDate);
+            ShortletAvailabilityDTO dto = availabilityService.setAvailability(landlordId, propertyId, startDate, endDate);
             return ResponseEntity.ok(dto);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-    @GetMapping("/availability/{landlordId}")
-    public ResponseEntity<List<ShortletAvailabilityDTO>> getAvailability(@PathVariable UUID landlordId) {
-        List<ShortletAvailabilityDTO> list = availabilityService.getAvailability(landlordId);
+    @GetMapping("/availability/{landlordId}/{propertyId}")
+    public ResponseEntity<List<ShortletAvailabilityDTO>> getAvailability(@PathVariable UUID landlordId, @PathVariable UUID propertyId) {
+        List<ShortletAvailabilityDTO> list = availabilityService.getAvailability(landlordId, propertyId);
         return ResponseEntity.ok(list);
     }
 

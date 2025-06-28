@@ -83,11 +83,16 @@ public class NotificationPublisherImpl implements NotificationPublisher {
 
         // Determine time window
         String timeWindow;
-        AvailabilitySlot slot = slotRepository.findById(visit.getSlotId()).orElse(null);
-        if (slot != null) {
-            ZonedDateTime start = TimeConverter.convertUtcToNigeria(slot.getStartTime());
-            ZonedDateTime end = TimeConverter.convertUtcToNigeria(slot.getEndTime());
-            timeWindow = start.format(formatter) + " – " + end.format(formatter);
+        if (visit.getSlotId() != null) {
+            AvailabilitySlot slot = slotRepository.findById(visit.getSlotId()).orElse(null);
+            if (slot != null) {
+                ZonedDateTime start = TimeConverter.convertUtcToNigeria(slot.getStartTime());
+                ZonedDateTime end = TimeConverter.convertUtcToNigeria(slot.getEndTime());
+                timeWindow = start.format(formatter) + " – " + end.format(formatter);
+            } else {
+                ZonedDateTime single = TimeConverter.convertUtcToNigeria(visit.getScheduledAt());
+                timeWindow = single.format(formatter);
+            }
         } else {
             ZonedDateTime single = TimeConverter.convertUtcToNigeria(visit.getScheduledAt());
             timeWindow = single.format(formatter);

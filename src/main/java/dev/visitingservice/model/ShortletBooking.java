@@ -30,6 +30,12 @@ public class ShortletBooking {
     @Column(name = "status", nullable = false)
     private BookingStatus status;
 
+    @Column(name = "reminder_24h_sent")
+    private boolean reminder24hSent = false;
+
+    @Column(name = "reminder_1h_sent")
+    private boolean reminder1hSent = false;
+
     public enum BookingStatus {
         PENDING, ACCEPTED, REJECTED, CANCELLED, RESCHEDULED
     }
@@ -76,5 +82,17 @@ public class ShortletBooking {
     }
     public void setStatus(BookingStatus status) {
         this.status = status;
+    }
+    public boolean isReminder24hSent() {
+        return reminder24hSent;
+    }
+    public void setReminder24hSent(boolean reminder24hSent) {
+        this.reminder24hSent = reminder24hSent;
+    }
+    public boolean isReminder1hSent() {
+        return reminder1hSent;
+    }
+    public void setReminder1hSent(boolean reminder1hSent) {
+        this.reminder1hSent = reminder1hSent;
     }
 }
