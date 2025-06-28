@@ -45,6 +45,9 @@ public class ShortletBookingServiceImpl implements ShortletBookingService {
         if (startDate.isAfter(endDate)) {
             throw new IllegalArgumentException("startDate must be before endDate");
         }
+        if (startDate.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Cannot create a booking in the past");
+        }
         // Check if the requested dates are available for this property and landlord
         List<ShortletAvailability> availabilities = availabilityRepository.findByLandlordIdAndPropertyId(landlordId, propertyId);
         boolean available = availabilities.stream().anyMatch(a -> !a.getStartDate().isAfter(startDate) && !a.getEndDate().isBefore(endDate));
@@ -113,6 +116,9 @@ public class ShortletBookingServiceImpl implements ShortletBookingService {
         if (!isAllowedTransition(booking.getStatus(), BookingStatus.ACCEPTED)) {
             throw new IllegalStateException("Cannot accept booking from status " + booking.getStatus());
         }
+        if (booking.getStartDate().isBefore(LocalDate.now())) {
+            throw new IllegalStateException("Cannot accept a booking that starts in the past");
+        }
         // Block the dates by removing the availability slot that covers this booking
         List<ShortletAvailability> availabilities = availabilityRepository.findByLandlordIdAndPropertyId(booking.getLandlordId(), booking.getPropertyId());
         Optional<ShortletAvailability> covering = availabilities.stream()
@@ -166,6 +172,9 @@ public class ShortletBookingServiceImpl implements ShortletBookingService {
         if (!isAllowedTransition(booking.getStatus(), BookingStatus.REJECTED)) {
             throw new IllegalStateException("Cannot reject booking from status " + booking.getStatus());
         }
+        if (booking.getStartDate().isBefore(LocalDate.now())) {
+            throw new IllegalStateException("Cannot reject a booking that has already started");
+        }
         booking.setStatus(BookingStatus.REJECTED);
         bookingRepository.save(booking);
         notificationPublisher.sendBookingRejected(booking);
@@ -179,6 +188,9 @@ public class ShortletBookingServiceImpl implements ShortletBookingService {
                 .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
         if (!isAllowedTransition(booking.getStatus(), BookingStatus.CANCELLED)) {
             throw new IllegalStateException("Cannot cancel booking from status " + booking.getStatus());
+        }
+        if (booking.getStartDate().isBefore(LocalDate.now())) {
+            throw new IllegalStateException("Cannot cancel a booking that has already started");
         }
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
@@ -195,6 +207,9 @@ public class ShortletBookingServiceImpl implements ShortletBookingService {
         }
         if (newStartDate.isAfter(newEndDate)) {
             throw new IllegalArgumentException("newStartDate must be before newEndDate");
+        }
+        if (newStartDate.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Cannot reschedule booking to a date in the past");
         }
 
         // Find booking

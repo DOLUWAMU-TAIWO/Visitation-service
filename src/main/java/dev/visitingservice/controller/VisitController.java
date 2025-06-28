@@ -114,4 +114,12 @@ public class VisitController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Available slots fetched successfully", slots));
     }
 
+    @GetMapping
+    public ResponseEntity<List<AvailabilitySlot>> getSlots(@RequestParam("propertyId") UUID propertyId,
+                                                           @RequestParam("landlordId") UUID landlordId) {
+        List<AvailabilitySlot> slots = slotService.getSlots(propertyId, landlordId);
+        return ResponseEntity.ok(slots);
+    }
 }
+
+

@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/slots")
@@ -31,5 +32,11 @@ public class SlotRangeController {
         );
         return ResponseEntity.ok(slots);
     }
-}
 
+    @GetMapping
+    public ResponseEntity<List<AvailabilitySlot>> getSlots(@RequestParam("propertyId") UUID propertyId,
+                                                           @RequestParam("landlordId") UUID landlordId) {
+        List<AvailabilitySlot> slots = slotService.getSlots(propertyId, landlordId);
+        return ResponseEntity.ok(slots);
+    }
+}

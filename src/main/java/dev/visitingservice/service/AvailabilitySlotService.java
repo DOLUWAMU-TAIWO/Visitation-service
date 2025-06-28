@@ -20,4 +20,6 @@ public interface AvailabilitySlotService {
     List<AvailabilitySlot> createSlotsForRange(
         UUID propertyId, UUID landlordId, LocalDate date, LocalTime startTime, LocalTime endTime, Integer intervalMinutes
     );
+
+    List<AvailabilitySlot> getSlots(UUID propertyId, UUID landlordId);
 }

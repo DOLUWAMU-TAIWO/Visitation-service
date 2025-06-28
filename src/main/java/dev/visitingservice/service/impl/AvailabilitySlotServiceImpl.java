@@ -95,4 +95,10 @@ public class AvailabilitySlotServiceImpl implements AvailabilitySlotService {
         }
         return createdSlots;
     }
+
+    @Override
+    public List<AvailabilitySlot> getSlots(UUID propertyId, UUID landlordId) {
+        return repository.findByPropertyIdAndLandlordIdAndStartTimeAfter(
+            propertyId, landlordId, OffsetDateTime.now());
+    }
 }
