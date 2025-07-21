@@ -30,6 +30,12 @@ type Mutation {
     rejectBooking(id: ID!): Booking!
     cancelBooking(id: ID!): Booking!
     rescheduleBooking(id: ID!, startDate: String!, endDate: String!): Booking!
+    updateBookingPayment(
+        bookingId: ID!,
+        paymentStatus: PaymentStatus!,
+        paymentReference: String,
+        paymentAmount: Float
+    ): Booking!
 
     # Visit mutations
     requestVisit(input: VisitInput!): Visit!
@@ -157,4 +163,10 @@ enum VisitStatus {
     CANCELLED
     COMPLETED
     RESCHEDULED
+}
+
+enum PaymentStatus {
+    PENDING
+    PAID
+    FAILED
 }

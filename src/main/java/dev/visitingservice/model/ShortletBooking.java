@@ -36,9 +36,32 @@ public class ShortletBooking {
     @Column(name = "reminder_1h_sent")
     private boolean reminder1hSent = false;
 
+    @Column(name = "first_name", nullable = false)
+    private String firstName;
+
+    @Column(name = "last_name", nullable = false)
+    private String lastName;
+
+    @Column(name = "phone_number", nullable = false)
+    private String phoneNumber;
+
     public enum BookingStatus {
-        PENDING, ACCEPTED, REJECTED, CANCELLED, RESCHEDULED
+        PENDING, ACCEPTED, REJECTED, CANCELLED, RESCHEDULED, NO_SHOW
     }
+
+    public enum PaymentStatus {
+        PENDING, PAID, FAILED
+    }
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status")
+    private PaymentStatus paymentStatus;
+
+    @Column(name = "payment_reference")
+    private String paymentReference;
+
+    @Column(name = "payment_amount")
+    private java.math.BigDecimal paymentAmount;
 
     // Getters and setters
     public UUID getId() {
@@ -94,5 +117,41 @@ public class ShortletBooking {
     }
     public void setReminder1hSent(boolean reminder1hSent) {
         this.reminder1hSent = reminder1hSent;
+    }
+    public String getFirstName() {
+        return firstName;
+    }
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+    public String getLastName() {
+        return lastName;
+    }
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+    public PaymentStatus getPaymentStatus() {
+        return paymentStatus;
+    }
+    public void setPaymentStatus(PaymentStatus paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+    public String getPaymentReference() {
+        return paymentReference;
+    }
+    public void setPaymentReference(String paymentReference) {
+        this.paymentReference = paymentReference;
+    }
+    public java.math.BigDecimal getPaymentAmount() {
+        return paymentAmount;
+    }
+    public void setPaymentAmount(java.math.BigDecimal paymentAmount) {
+        this.paymentAmount = paymentAmount;
     }
 }

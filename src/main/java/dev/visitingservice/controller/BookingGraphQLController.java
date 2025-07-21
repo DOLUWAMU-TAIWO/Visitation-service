@@ -117,8 +117,10 @@ public class BookingGraphQLController {
         UUID propertyId = UUID.fromString(input.get("propertyId"));
         LocalDate startDate = LocalDate.parse(input.get("startDate"));
         LocalDate endDate = LocalDate.parse(input.get("endDate"));
-
-        return bookingService.createBooking(tenantId, landlordId, propertyId, startDate, endDate);
+        String firstName = input.get("firstName");
+        String lastName = input.get("lastName");
+        String phoneNumber = input.get("phoneNumber");
+        return bookingService.createBooking(tenantId, landlordId, propertyId, startDate, endDate, firstName, lastName, phoneNumber);
     }
 
     @MutationMapping
@@ -145,5 +147,19 @@ public class BookingGraphQLController {
                 UUID.fromString(id),
                 LocalDate.parse(startDate),
                 LocalDate.parse(endDate));
+    }
+
+    @MutationMapping
+    public ShortletBookingDTO updateBookingPayment(
+            @Argument String bookingId,
+            @Argument String paymentStatus,
+            @Argument String paymentReference,
+            @Argument Double paymentAmount) {
+        return bookingService.updateBookingPayment(
+            UUID.fromString(bookingId),
+            paymentStatus,
+            paymentReference,
+            paymentAmount
+        );
     }
 }

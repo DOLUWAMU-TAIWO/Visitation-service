@@ -11,6 +11,16 @@ public class ShortletBookingDTO {
     private LocalDate startDate;
     private LocalDate endDate;
     private String status;
+    private String firstName;
+    private String lastName;
+    private String phoneNumber;
+    private PaymentStatus paymentStatus;
+    private String paymentReference;
+    private Double paymentAmount;
+
+    public enum PaymentStatus {
+        PENDING, PAID, FAILED
+    }
 
     public UUID getId() {
         return id;
@@ -66,5 +76,53 @@ public class ShortletBookingDTO {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public PaymentStatus getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(PaymentStatus paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public String getPaymentReference() {
+        return paymentReference;
+    }
+
+    public void setPaymentReference(String paymentReference) {
+        this.paymentReference = paymentReference;
+    }
+
+    public Double getPaymentAmount() {
+        return paymentAmount;
+    }
+
+    public void setPaymentAmount(Double paymentAmount) {
+        this.paymentAmount = paymentAmount;
     }
 }

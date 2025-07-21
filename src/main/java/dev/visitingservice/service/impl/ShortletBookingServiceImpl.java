@@ -38,7 +38,7 @@ public class ShortletBookingServiceImpl implements ShortletBookingService {
 
     @Override
     @Transactional
-    public ShortletBookingDTO createBooking(UUID tenantId, UUID landlordId, UUID propertyId, LocalDate startDate, LocalDate endDate) {
+    public ShortletBookingDTO createBooking(UUID tenantId, UUID landlordId, UUID propertyId, LocalDate startDate, LocalDate endDate, String firstName, String lastName, String phoneNumber) {
         if (tenantId == null || landlordId == null || propertyId == null || startDate == null || endDate == null) {
             throw new IllegalArgumentException("All booking fields are required");
         }
@@ -82,6 +82,11 @@ public class ShortletBookingServiceImpl implements ShortletBookingService {
         booking.setStartDate(startDate);
         booking.setEndDate(endDate);
         booking.setStatus(BookingStatus.PENDING);
+        booking.setFirstName(firstName);
+        booking.setLastName(lastName);
+        booking.setPhoneNumber(phoneNumber);
+        booking.setPaymentStatus(ShortletBooking.PaymentStatus.PENDING);
+
         ShortletBooking saved = bookingRepository.save(booking);
         notificationPublisher.sendBookingCreated(saved);
         return toDTO(saved);
@@ -246,6 +251,28 @@ public class ShortletBookingServiceImpl implements ShortletBookingService {
         return toDTO(updated);
     }
 
+    @Override
+    @Transactional
+    public ShortletBookingDTO updateBookingPayment(UUID bookingId, String paymentStatus, String paymentReference, Double paymentAmount) {
+        ShortletBooking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+        if (paymentStatus != null) {
+            try {
+                booking.setPaymentStatus(ShortletBooking.PaymentStatus.valueOf(paymentStatus));
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid payment status: " + paymentStatus);
+            }
+        }
+        if (paymentReference != null) {
+            booking.setPaymentReference(paymentReference);
+        }
+        if (paymentAmount != null) {
+            booking.setPaymentAmount(java.math.BigDecimal.valueOf(paymentAmount));
+        }
+        bookingRepository.save(booking);
+        return toDTO(booking);
+    }
+
     private ShortletBookingDTO toDTO(ShortletBooking booking) {
         ShortletBookingDTO dto = new ShortletBookingDTO();
         dto.setId(booking.getId());
@@ -255,6 +282,12 @@ public class ShortletBookingServiceImpl implements ShortletBookingService {
         dto.setStartDate(booking.getStartDate());
         dto.setEndDate(booking.getEndDate());
         dto.setStatus(booking.getStatus().name());
+        dto.setFirstName(booking.getFirstName());
+        dto.setLastName(booking.getLastName());
+        dto.setPhoneNumber(booking.getPhoneNumber());
+        dto.setPaymentStatus(booking.getPaymentStatus() != null ? ShortletBookingDTO.PaymentStatus.valueOf(booking.getPaymentStatus().name()) : null);
+        dto.setPaymentReference(booking.getPaymentReference());
+        dto.setPaymentAmount(booking.getPaymentAmount() != null ? booking.getPaymentAmount().doubleValue() : null);
         return dto;
     }
 }

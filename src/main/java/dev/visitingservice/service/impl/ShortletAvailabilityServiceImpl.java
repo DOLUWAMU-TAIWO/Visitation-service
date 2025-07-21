@@ -34,11 +34,44 @@ public class ShortletAvailabilityServiceImpl implements ShortletAvailabilityServ
         }
         // Validate property ownership
         validationService.validateListingOwnership(propertyId, landlordId);
-        boolean overlap = availabilityRepository.existsByLandlordIdAndPropertyIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+
+        // Check if an exact slot already exists
+        List<ShortletAvailability> exact = availabilityRepository.findByLandlordIdAndPropertyIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
                 landlordId, propertyId, endDate, startDate);
-        if (overlap) {
-            throw new IllegalArgumentException("Overlapping availability exists for these dates");
+        for (ShortletAvailability slot : exact) {
+            if (slot.getStartDate().equals(startDate) && slot.getEndDate().equals(endDate)) {
+                // Return the existing slot instead of inserting a duplicate
+                return toDTO(slot);
+            }
         }
+
+        // Find all overlapping availabilities for this landlord and property
+        List<ShortletAvailability> overlapping = availabilityRepository.findByLandlordIdAndPropertyIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                landlordId, propertyId, endDate, startDate);
+        for (ShortletAvailability slot : overlapping) {
+            // If the slot starts before the new range, preserve the non-overlapping part before
+            if (slot.getStartDate().isBefore(startDate)) {
+                ShortletAvailability before = new ShortletAvailability();
+                before.setLandlordId(slot.getLandlordId());
+                before.setPropertyId(slot.getPropertyId());
+                before.setStartDate(slot.getStartDate());
+                before.setEndDate(startDate.minusDays(1));
+                availabilityRepository.save(before);
+            }
+            // If the slot ends after the new range, preserve the non-overlapping part after
+            if (slot.getEndDate().isAfter(endDate)) {
+                ShortletAvailability after = new ShortletAvailability();
+                after.setLandlordId(slot.getLandlordId());
+                after.setPropertyId(slot.getPropertyId());
+                after.setStartDate(endDate.plusDays(1));
+                after.setEndDate(slot.getEndDate());
+                availabilityRepository.save(after);
+            }
+            // Delete the original overlapping slot
+            availabilityRepository.delete(slot);
+        }
+
+        // Always create and save the new slot for the requested range
         ShortletAvailability availability = new ShortletAvailability();
         availability.setLandlordId(landlordId);
         availability.setPropertyId(propertyId);

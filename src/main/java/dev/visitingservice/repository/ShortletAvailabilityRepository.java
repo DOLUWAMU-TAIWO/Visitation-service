@@ -14,4 +14,5 @@ public interface ShortletAvailabilityRepository extends JpaRepository<ShortletAv
     boolean existsByLandlordIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(UUID landlordId, LocalDate endDate, LocalDate startDate);
     List<ShortletAvailability> findByLandlordIdAndPropertyId(UUID landlordId, UUID propertyId);
     boolean existsByLandlordIdAndPropertyIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(UUID landlordId, UUID propertyId, LocalDate endDate, LocalDate startDate);
+    List<ShortletAvailability> findByLandlordIdAndPropertyIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(UUID landlordId, UUID propertyId, LocalDate endDate, LocalDate startDate);
 }

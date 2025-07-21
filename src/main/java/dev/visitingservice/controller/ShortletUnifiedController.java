@@ -65,7 +65,10 @@ public class ShortletUnifiedController {
             UUID propertyId = UUID.fromString(body.get("propertyId"));
             LocalDate startDate = LocalDate.parse(body.get("startDate"));
             LocalDate endDate = LocalDate.parse(body.get("endDate"));
-            ShortletBookingDTO dto = bookingService.createBooking(tenantId, landlordId, propertyId, startDate, endDate);
+            String firstName = body.get("firstName");
+            String lastName = body.get("lastName");
+            String phoneNumber = body.get("phoneNumber");
+            ShortletBookingDTO dto = bookingService.createBooking(tenantId, landlordId, propertyId, startDate, endDate, firstName, lastName, phoneNumber);
             return ResponseEntity.ok(dto);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

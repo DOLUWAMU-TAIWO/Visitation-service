@@ -50,7 +50,7 @@ All requests require the following header:
 
 ---
 
-### 2. Create a Booking
+### 2. Create Shortlet Booking
 **POST** `/api/shortlets/bookings`
 
 **Request Body:**
@@ -60,7 +60,10 @@ All requests require the following header:
   "landlordId": "<landlord-uuid>",
   "propertyId": "<property-uuid>",
   "startDate": "YYYY-MM-DD",
-  "endDate": "YYYY-MM-DD"
+  "endDate": "YYYY-MM-DD",
+  "firstName": "John",
+  "lastName": "Doe",
+  "phoneNumber": "+1234567890"
 }
 ```
 
@@ -73,16 +76,36 @@ All requests require the following header:
   "propertyId": "<property-uuid>",
   "startDate": "YYYY-MM-DD",
   "endDate": "YYYY-MM-DD",
-  "status": "PENDING"
+  "status": "PENDING",
+  "firstName": "John",
+  "lastName": "Doe",
+  "phoneNumber": "+1234567890",
+  "paymentStatus": "PENDING",
+  "paymentReference": null,
+  "paymentAmount": null
 }
 ```
 
-- Multiple tenants can create PENDING bookings for the same slot.
-- Only one booking can be ACCEPTED for a slot; all overlapping PENDING bookings are rejected when one is accepted.
+---
+
+### 3. Update Booking Payment (REST)
+**POST** `/api/shortlets/bookings/{bookingId}/payment`
+
+**Request Body:**
+```json
+{
+  "paymentStatus": "PAID", // or PENDING, FAILED
+  "paymentReference": "TXN-123456",
+  "paymentAmount": 100.00
+}
+```
+
+**Response:**
+Returns the updated booking object (see above).
 
 ---
 
-### 3. Accept/Reject/Cancel a Booking
+### 4. Accept/Reject/Cancel a Booking
 **Accept:**
 - `POST /api/shortlets/bookings/{bookingId}/accept`
 
@@ -103,7 +126,7 @@ All requests require the following header:
 
 ---
 
-### 4. Get Bookings (History)
+### 5. Get Bookings (History)
 **GET** `/api/bookings/{landlordId}`
 
 **Query Params:**
@@ -123,7 +146,7 @@ All requests require the following header:
 
 ---
 
-### 5. Calendar View
+### 6. Calendar View
 **GET** `/api/calendar/{propertyId}?from=YYYY-MM-DD&to=YYYY-MM-DD`
 
 Returns available slots and bookings for a property in a date range.
@@ -161,6 +184,7 @@ Returns available slots and bookings for a property in a date range.
 - `rejectBooking(id: String): ShortletBookingDTO`
 - `cancelBooking(id: String): ShortletBookingDTO`
 - `rescheduleBooking(id: String, startDate: String, endDate: String): ShortletBookingDTO`
+- `updateBookingPayment(bookingId: String, paymentStatus: String, paymentReference: String, paymentAmount: Float): ShortletBookingDTO`
 
 ### Example Queries
 - `booking(id: String): ShortletBookingDTO`
@@ -199,7 +223,10 @@ curl -X POST "https://qorelabs.xyz/api/shortlets/bookings" \
     "landlordId": "eb22925c-1201-48b0-894d-373c825e2778",
     "propertyId": "1880e4c0-5bd6-4ab9-b06d-2e422298ef30",
     "startDate": "2025-11-17",
-    "endDate": "2025-11-19"
+    "endDate": "2025-11-19",
+    "firstName": "John",
+    "lastName": "Doe",
+    "phoneNumber": "+1234567890"
   }'
 ```
 
@@ -211,6 +238,8 @@ curl -X POST "https://qorelabs.xyz/api/shortlets/bookings" \
 - All date/times should be in `YYYY-MM-DD` format and interpreted as Africa/Lagos time.
 - For booking status transitions, use the appropriate endpoint (accept, reject, cancel).
 - For calendar and booking history, use the provided endpoints for efficient data retrieval.
+- Include `firstName`, `lastName`, and `phoneNumber` in all booking requests.
+- Handle payment updates via the `/api/shortlets/bookings/{bookingId}/payment` endpoint or the `updateBookingPayment` GraphQL mutation.
 
 ---
 
