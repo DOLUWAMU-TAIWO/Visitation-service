@@ -20,7 +20,7 @@ Add a GraphQL client to your microservice. Example using [Spring GraphQL WebClie
 ```java
 WebClient webClient = WebClient.create("http://localhost:6464/graphql");
 GraphQlClient graphQlClient = GraphQlClient.builder(webClient).build();
-```
+```flyway migratiopn
 
 ---
 
