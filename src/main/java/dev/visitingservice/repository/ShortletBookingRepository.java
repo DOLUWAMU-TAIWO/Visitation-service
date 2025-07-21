@@ -7,6 +7,8 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 @Repository
 public interface ShortletBookingRepository extends JpaRepository<ShortletBooking, UUID> {
@@ -31,4 +33,7 @@ public interface ShortletBookingRepository extends JpaRepository<ShortletBooking
             UUID tenantId, ShortletBooking.BookingStatus status, LocalDate startDate, LocalDate endDate);
     List<ShortletBooking> findByLandlordIdAndStatusAndStartDateGreaterThanEqualAndEndDateLessThanEqual(
             UUID landlordId, ShortletBooking.BookingStatus status, LocalDate startDate, LocalDate endDate);
+
+    @Query("SELECT DISTINCT b.propertyId FROM ShortletBooking b WHERE b.status = dev.visitingservice.model.ShortletBooking.BookingStatus.ACCEPTED AND b.startDate < :endDate AND b.endDate > :startDate")
+    List<UUID> findAcceptedBookedPropertyIdsInRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }

@@ -3,6 +3,7 @@ package dev.visitingservice.service.impl;
 import dev.visitingservice.dto.ShortletAvailabilityDTO;
 import dev.visitingservice.model.ShortletAvailability;
 import dev.visitingservice.repository.ShortletAvailabilityRepository;
+import dev.visitingservice.repository.ShortletBookingRepository;
 import dev.visitingservice.service.ShortletAvailabilityService;
 import dev.visitingservice.service.VisitValidationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,11 +20,13 @@ public class ShortletAvailabilityServiceImpl implements ShortletAvailabilityServ
 
     private final ShortletAvailabilityRepository availabilityRepository;
     private final VisitValidationService validationService;
+    private final ShortletBookingRepository bookingRepository;
 
     @Autowired
-    public ShortletAvailabilityServiceImpl(ShortletAvailabilityRepository availabilityRepository, VisitValidationService validationService) {
+    public ShortletAvailabilityServiceImpl(ShortletAvailabilityRepository availabilityRepository, VisitValidationService validationService, ShortletBookingRepository bookingRepository) {
         this.availabilityRepository = availabilityRepository;
         this.validationService = validationService;
+        this.bookingRepository = bookingRepository;
     }
 
     @Override
@@ -106,6 +109,21 @@ public class ShortletAvailabilityServiceImpl implements ShortletAvailabilityServ
     public boolean isAvailable(UUID landlordId, UUID propertyId, LocalDate startDate, LocalDate endDate) {
         return !availabilityRepository.existsByLandlordIdAndPropertyIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
                 landlordId, propertyId, endDate, startDate);
+    }
+
+    @Override
+    public List<UUID> getAvailablePropertyIdsInRange(LocalDate desiredStart, LocalDate desiredEnd) {
+        // Step 1: Get all property IDs with an availability slot for the date range
+        List<UUID> availablePropertyIds = availabilityRepository.findPropertyIdsWithAvailabilityInRange(desiredStart, desiredEnd);
+        if (availablePropertyIds.isEmpty()) {
+            return List.of();
+        }
+        // Step 2: Exclude properties that have an ACCEPTED booking overlapping the requested range
+        List<UUID> bookedPropertyIds = bookingRepository.findAcceptedBookedPropertyIdsInRange(desiredStart, desiredEnd);
+        // Step 3: Return only those that are available and not booked
+        return availablePropertyIds.stream()
+                .filter(id -> !bookedPropertyIds.contains(id))
+                .collect(Collectors.toList());
     }
 
     private ShortletAvailabilityDTO toDTO(ShortletAvailability availability) {

@@ -2,16 +2,19 @@ package dev.visitingservice.controller;
 
 import dev.visitingservice.dto.ShortletAvailabilityDTO;
 import dev.visitingservice.dto.ShortletBookingDTO;
+import dev.visitingservice.dto.ListingDto;
 import dev.visitingservice.service.ShortletAvailabilityService;
 import dev.visitingservice.service.ShortletBookingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/api/shortlets")
@@ -56,6 +59,20 @@ public class ShortletUnifiedController {
         }
     }
 
+    @GetMapping("/availability/search")
+    public ResponseEntity<?> getAvailableListingsByDateRange(@RequestParam String startDate, @RequestParam String endDate) {
+        LocalDate desiredStart = LocalDate.parse(startDate);
+        LocalDate desiredEnd = LocalDate.parse(endDate);
+        List<UUID> propertyIds = availabilityService.getAvailablePropertyIdsInRange(desiredStart, desiredEnd);
+        if (propertyIds.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+        List<ListingDto> listings = listingGraphQLClient.getListingsByIds(propertyIds);
+        return ResponseEntity.ok(listings);
+    }
+
+    @Autowired
+    private dev.visitingservice.client.ListingGraphQLClient listingGraphQLClient;
     // --- Booking Endpoints ---
     @PostMapping("/bookings")
     public ResponseEntity<?> createBooking(@RequestBody Map<String, String> body) {

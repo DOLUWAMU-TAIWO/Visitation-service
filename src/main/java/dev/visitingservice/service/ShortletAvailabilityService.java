@@ -12,4 +12,5 @@ public interface ShortletAvailabilityService {
     List<ShortletAvailabilityDTO> getAvailability(UUID landlordId, UUID propertyId);
     void deleteAvailability(UUID availabilityId);
     boolean isAvailable(UUID landlordId, UUID propertyId, LocalDate startDate, LocalDate endDate);
+    List<UUID> getAvailablePropertyIdsInRange(LocalDate desiredStart, LocalDate desiredEnd);
 }

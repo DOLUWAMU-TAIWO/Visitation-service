@@ -2,6 +2,8 @@ package dev.visitingservice.repository;
 
 import dev.visitingservice.model.ShortletAvailability;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -15,4 +17,6 @@ public interface ShortletAvailabilityRepository extends JpaRepository<ShortletAv
     List<ShortletAvailability> findByLandlordIdAndPropertyId(UUID landlordId, UUID propertyId);
     boolean existsByLandlordIdAndPropertyIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(UUID landlordId, UUID propertyId, LocalDate endDate, LocalDate startDate);
     List<ShortletAvailability> findByLandlordIdAndPropertyIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(UUID landlordId, UUID propertyId, LocalDate endDate, LocalDate startDate);
+    @Query("SELECT DISTINCT s.propertyId FROM ShortletAvailability s WHERE s.startDate <= :desiredEnd AND s.endDate >= :desiredStart")
+    List<UUID> findPropertyIdsWithAvailabilityInRange(@Param("desiredStart") LocalDate desiredStart, @Param("desiredEnd") LocalDate desiredEnd);
 }
