@@ -82,7 +82,6 @@ public class ShortletAvailabilityServiceIntegrationTest {
         // Availability: 2025-10-01 to 2025-10-30
         ShortletAvailability avail = new ShortletAvailability();
         avail.setLandlordId(landlordId);
-
         avail.setPropertyId(propertyId);
         avail.setStartDate(LocalDate.of(2025, 10, 1));
         avail.setEndDate(LocalDate.of(2025, 10, 30));

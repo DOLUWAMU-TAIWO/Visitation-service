@@ -42,6 +42,13 @@ public class ListingRestClient {
             return null;
         } catch (Exception e) {
             logger.error("Error fetching listing {}: {}", listingId, e.getMessage());
+            // Debug: log the raw response if possible
+            try {
+                String rawJson = restTemplate.getForObject(url, String.class);
+                logger.error("Raw JSON response for listing {}: {}", listingId, rawJson);
+            } catch (Exception ex) {
+                logger.error("Failed to fetch raw JSON for listing {}: {}", listingId, ex.getMessage());
+            }
             throw new ExternalServiceException("Failed to fetch listing " + listingId, e);
         }
     }
