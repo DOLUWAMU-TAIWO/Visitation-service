@@ -1,20 +1,19 @@
 package dev.visitingservice.controller;
 
+import dev.visitingservice.client.ListingGraphQLClient;
+import dev.visitingservice.dto.ListingDto;
 import dev.visitingservice.dto.ShortletAvailabilityDTO;
 import dev.visitingservice.dto.ShortletBookingDTO;
-import dev.visitingservice.dto.ListingDto;
 import dev.visitingservice.service.ShortletAvailabilityService;
 import dev.visitingservice.service.ShortletBookingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 
 @RestController
 @RequestMapping("/api/shortlets")
@@ -22,11 +21,13 @@ public class ShortletUnifiedController {
 
     private final ShortletAvailabilityService availabilityService;
     private final ShortletBookingService bookingService;
+    private final ListingGraphQLClient listingGraphQLClient;
 
     @Autowired
-    public ShortletUnifiedController(ShortletAvailabilityService availabilityService, ShortletBookingService bookingService) {
+    public ShortletUnifiedController(ShortletAvailabilityService availabilityService, ShortletBookingService bookingService, ListingGraphQLClient listingGraphQLClient) {
         this.availabilityService = availabilityService;
         this.bookingService = bookingService;
+        this.listingGraphQLClient = listingGraphQLClient;
     }
 
     // --- Availability Endpoints ---
@@ -60,19 +61,41 @@ public class ShortletUnifiedController {
     }
 
     @GetMapping("/availability/search")
-    public ResponseEntity<?> getAvailableListingsByDateRange(@RequestParam String startDate, @RequestParam String endDate) {
-        LocalDate desiredStart = LocalDate.parse(startDate);
-        LocalDate desiredEnd = LocalDate.parse(endDate);
-        List<UUID> propertyIds = availabilityService.getAvailablePropertyIdsInRange(desiredStart, desiredEnd);
-        if (propertyIds.isEmpty()) {
-            return ResponseEntity.ok(List.of());
+    public ResponseEntity<?> searchAvailableListings(@RequestParam("startDate") String startDateStr,
+                                                    @RequestParam("endDate") String endDateStr) {
+        try {
+            LocalDate startDate = LocalDate.parse(startDateStr);
+            LocalDate endDate = LocalDate.parse(endDateStr);
+            List<UUID> propertyIds = availabilityService.getAvailablePropertyIdsInRange(startDate, endDate);
+            if (propertyIds.isEmpty()) {
+                return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "No available properties found for the given date range.",
+                    "data", List.of()
+                ));
+            }
+            List<ListingDto> listings = listingGraphQLClient.getListingsByIds(propertyIds);
+            if (listings == null || listings.isEmpty()) {
+                return ResponseEntity.ok(Map.of(
+                    "success", false,
+                    "message", "No listing details found for the available property IDs.",
+                    "data", List.of()
+                ));
+            }
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Available listings fetched successfully.",
+                "data", listings
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "Error occurred while searching for available listings: " + e.getMessage(),
+                "data", List.of()
+            ));
         }
-        List<ListingDto> listings = listingGraphQLClient.getListingsByIds(propertyIds);
-        return ResponseEntity.ok(listings);
     }
 
-    @Autowired
-    private dev.visitingservice.client.ListingGraphQLClient listingGraphQLClient;
     // --- Booking Endpoints ---
     @PostMapping("/bookings")
     public ResponseEntity<?> createBooking(@RequestBody Map<String, String> body) {

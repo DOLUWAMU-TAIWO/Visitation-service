@@ -37,6 +37,24 @@ public class ListingGraphQLClient {
                 description
                 price
                 status
+                address {
+                  streetNumber
+                  street
+                  city
+                  state
+                  country
+                  postalCode
+                  neighborhood
+                  sublocality
+                  formattedAddress
+                  placeId
+                }
+                propertyType
+                bedrooms
+                bathrooms
+                furnishingStatus
+                amenities
+                imageKeys
             }
         }
         """;
@@ -64,6 +82,28 @@ public class ListingGraphQLClient {
         dto.setDescription((String) map.get("description"));
         dto.setPrice(map.get("price") != null ? new java.math.BigDecimal(map.get("price").toString()) : null);
         dto.setStatus((String) map.get("status"));
+        // Address mapping
+        Map<String, Object> addressMap = (Map<String, Object>) map.get("address");
+        if (addressMap != null) {
+            dev.visitingservice.dto.AddressDto addressDto = new dev.visitingservice.dto.AddressDto();
+            addressDto.setStreetNumber((String) addressMap.get("streetNumber"));
+            addressDto.setStreet((String) addressMap.get("street"));
+            addressDto.setCity((String) addressMap.get("city"));
+            addressDto.setState((String) addressMap.get("state"));
+            addressDto.setCountry((String) addressMap.get("country"));
+            addressDto.setPostalCode((String) addressMap.get("postalCode"));
+            addressDto.setNeighborhood((String) addressMap.get("neighborhood"));
+            addressDto.setSublocality((String) addressMap.get("sublocality"));
+            addressDto.setFormattedAddress((String) addressMap.get("formattedAddress"));
+            addressDto.setPlaceId((String) addressMap.get("placeId"));
+            dto.setAddress(addressDto);
+        }
+        dto.setPropertyType((String) map.get("propertyType"));
+        dto.setBedrooms(map.get("bedrooms") != null ? ((Number) map.get("bedrooms")).intValue() : null);
+        dto.setBathrooms(map.get("bathrooms") != null ? ((Number) map.get("bathrooms")).intValue() : null);
+        dto.setFurnishingStatus((String) map.get("furnishingStatus"));
+        dto.setAmenities((List<String>) map.get("amenities"));
+        dto.setImageKeys((List<String>) map.get("imageKeys"));
         return dto;
     }
 }
