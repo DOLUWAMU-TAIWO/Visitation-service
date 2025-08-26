@@ -54,4 +54,6 @@ public interface ShortletBookingRepository extends JpaRepository<ShortletBooking
     // Method for manual property-specific reminders
     List<ShortletBooking> findByPropertyIdAndLandlordIdAndStatusAndStartDateGreaterThanEqualAndStartDateLessThanEqual(
         UUID propertyId, UUID landlordId, BookingStatus status, LocalDate fromDate, LocalDate toDate);
+
+    List<ShortletBooking> findByPropertyId(UUID propertyId);
 }

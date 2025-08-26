@@ -18,4 +18,5 @@ public interface ShortletBookingService {
     List<ShortletBookingDTO> getTenantBookings(UUID tenantId, int page, int limit, String status);
     ShortletBookingDTO getBookingById(UUID bookingId);
     List<ShortletBookingDTO> getAllBookings(int page, int limit, String status, LocalDate dateFrom, LocalDate dateTo);
+    List<ShortletBookingDTO> getBookingsByProperty(UUID propertyId);
 }

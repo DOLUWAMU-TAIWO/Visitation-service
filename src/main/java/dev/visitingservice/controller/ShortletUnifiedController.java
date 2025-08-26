@@ -215,4 +215,11 @@ public class ShortletUnifiedController {
                 return ResponseEntity.badRequest().build();
         }
     }
+
+    // GET BOOKINGS BY PROPERTY
+    @GetMapping("/bookings/property/{propertyId}")
+    public ResponseEntity<List<ShortletBookingDTO>> getBookingsByProperty(@PathVariable UUID propertyId) {
+        List<ShortletBookingDTO> bookings = bookingService.getBookingsByProperty(propertyId);
+        return ResponseEntity.ok(bookings);
+    }
 }

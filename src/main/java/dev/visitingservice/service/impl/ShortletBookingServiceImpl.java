@@ -344,6 +344,17 @@ public class ShortletBookingServiceImpl implements ShortletBookingService {
         return toDTO(booking);
     }
 
+    @Override
+    public List<ShortletBookingDTO> getBookingsByProperty(UUID propertyId) {
+        if (propertyId == null) {
+            throw new IllegalArgumentException("propertyId cannot be null");
+        }
+        return bookingRepository.findByPropertyId(propertyId)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
     private ShortletBookingDTO toDTO(ShortletBooking booking) {
         ShortletBookingDTO dto = new ShortletBookingDTO();
         dto.setId(booking.getId());
