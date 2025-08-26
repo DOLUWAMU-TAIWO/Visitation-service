@@ -32,13 +32,13 @@ public class ShortletBooking {
     private BookingStatus status;
 
     @Column(name = "reminder_24h_sent")
-    private boolean reminder24hSent = false;
+    private Boolean reminder24hSent = false;
 
     @Column(name = "reminder_5h_sent")
-    private boolean reminder5hSent = false;
+    private Boolean reminder5hSent = false;
 
     @Column(name = "reminder_1h_sent")
-    private boolean reminder1hSent = false;
+    private Boolean reminder1hSent = false;
 
     @Column(name = "first_name", nullable = false)
     private String firstName;
@@ -127,22 +127,22 @@ public class ShortletBooking {
     public void setStatus(BookingStatus status) {
         this.status = status;
     }
-    public boolean isReminder24hSent() {
+    public Boolean getReminder24hSent() {
         return reminder24hSent;
     }
-    public void setReminder24hSent(boolean reminder24hSent) {
+    public void setReminder24hSent(Boolean reminder24hSent) {
         this.reminder24hSent = reminder24hSent;
     }
-    public boolean isReminder5hSent() {
+    public Boolean getReminder5hSent() {
         return reminder5hSent;
     }
-    public void setReminder5hSent(boolean reminder5hSent) {
+    public void setReminder5hSent(Boolean reminder5hSent) {
         this.reminder5hSent = reminder5hSent;
     }
-    public boolean isReminder1hSent() {
+    public Boolean getReminder1hSent() {
         return reminder1hSent;
     }
-    public void setReminder1hSent(boolean reminder1hSent) {
+    public void setReminder1hSent(Boolean reminder1hSent) {
         this.reminder1hSent = reminder1hSent;
     }
     public String getFirstName() {

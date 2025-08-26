@@ -57,7 +57,7 @@ public class BookingScheduler {
 
         int sentCount = 0;
         for (ShortletBooking booking : bookings) {
-            if (!booking.isReminder24hSent()) {
+            if (!booking.getReminder24hSent()) {
                 try {
                     notificationPublisher.sendBookingReminder(booking, 24);
                     booking.setReminder24hSent(true);
@@ -92,7 +92,7 @@ public class BookingScheduler {
         int sentCount = 0;
         for (ShortletBooking booking : bookings) {
             // Now use the dedicated reminder5hSent field instead of hijacking reminder1hSent
-            if (!booking.isReminder5hSent()) {
+            if (!booking.getReminder5hSent()) {
                 try {
                     notificationPublisher.sendBookingReminder(booking, 5);
                     booking.setReminder5hSent(true); // Mark as 5h reminder sent
@@ -120,7 +120,7 @@ public class BookingScheduler {
         int sentCount = 0;
         for (ShortletBooking booking : bookings) {
             // Now properly check for 1h reminder - only send if 5h was already sent and 1h hasn't been sent
-            if (booking.isReminder5hSent() && !booking.isReminder1hSent()) {
+            if (booking.getReminder5hSent() && !booking.getReminder1hSent()) {
                 // Check if current time is within 1-2 hours of check-in (assuming 12 PM check-in)
                 int currentHour = now.getHour();
                 if (currentHour >= 10 && currentHour <= 11) { // Between 10-11 AM for 12 PM check-in

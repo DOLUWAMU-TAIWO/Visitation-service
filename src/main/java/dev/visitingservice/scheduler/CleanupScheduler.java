@@ -141,7 +141,7 @@ public class CleanupScheduler {
 
         int resetCount = 0;
         for (ShortletBooking booking : completedBookings) {
-            if (booking.isReminder24hSent() || booking.isReminder5hSent() || booking.isReminder1hSent()) {
+            if (booking.getReminder24hSent() || booking.getReminder5hSent() || booking.getReminder1hSent()) {
                 booking.setReminder24hSent(false);
                 booking.setReminder5hSent(false);
                 booking.setReminder1hSent(false);
