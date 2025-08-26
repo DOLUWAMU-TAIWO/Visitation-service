@@ -7,6 +7,9 @@ import dev.visitingservice.model.Visit;
 import dev.visitingservice.service.NotificationPublisher;
 import dev.visitingservice.service.EmailService;
 import dev.visitingservice.util.TimeConverter;
+import dev.visitingservice.util.JwtUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import dev.visitingservice.repository.AvailabilitySlotRepository;
 import dev.visitingservice.model.AvailabilitySlot;
@@ -26,6 +29,19 @@ public class NotificationPublisherImpl implements NotificationPublisher {
     private final AvailabilitySlotRepository slotRepository;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, MMM d, yyyy 'at' h:mm a");
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(NotificationPublisher.class);
+
+    @Autowired
+    private JwtUtils jwtUtils;
+
+    @Value("${magic.link.base.url}")
+    private String baseUrl;
+
+    @Value("${magic.link.landlord.path}")
+    private String landlordPath;
+
+    @Value("${magic.link.tenant.path}")
+    private String tenantPath;
+
     public NotificationPublisherImpl(EmailService emailService,
                                      UserGraphQLClient userClient,
                                      ListingRestClient listingClient,
@@ -98,7 +114,7 @@ public class NotificationPublisherImpl implements NotificationPublisher {
             timeWindow = single.format(formatter);
         }
 
-        return switch (type) {
+        String baseContent = switch (type) {
 
             case "VISIT_REQUESTED" -> isVisitor
                     ? String.format("""
@@ -141,7 +157,7 @@ public class NotificationPublisherImpl implements NotificationPublisher {
                 """, propertyTitle, timeWindow)
                     : String.format("""
                 <h2 style="color:#2b5adc;">Visit Rejected</h2>
-                <p>You’ve declined the visit request from <strong>%s</strong>.</p>
+                <p>You've declined the visit request from <strong>%s</strong>.</p>
                 <p><strong>Scheduled time:</strong> %s</p>
                 <p>The visitor has been informed accordingly.</p>
                 """, visitorName, timeWindow);
@@ -167,13 +183,25 @@ public class NotificationPublisherImpl implements NotificationPublisher {
             case "FEEDBACK_PROMPT" -> String.format("""
             <h2 style="color:#2b5adc;">How Was Your Visit? 💬</h2>
             <p>Hi,</p>
-            <p>We’d love to hear how your visit to <strong>%s</strong> went.</p>
+            <p>We'd love to hear how your visit to <strong>%s</strong> went.</p>
             <p>Your feedback helps us improve and support more renters like you.</p>
             <p><a href="https://zennest.africa/feedback" style="color:#2b5adc;">Leave Feedback</a></p>
             """, propertyTitle);
 
             default -> "";
         };
+
+        // Generate magic link for this recipient
+        String userRole = isVisitor ? "TENANT" : "LANDLORD";
+        String magicLink = generateMagicLink(recipientId, userRole);
+
+        // Append magic link button if generation succeeded
+        if (magicLink != null) {
+            return baseContent + generateMagicLinkButton(type, isVisitor, magicLink);
+        }
+
+        // Return original content if magic link generation failed
+        return baseContent;
     }
 
     private String getVisitorName(UUID visitorId) {
@@ -192,6 +220,73 @@ public class NotificationPublisherImpl implements NotificationPublisher {
             logger.warn("Could not resolve visitor name for ID {}: {}", visitorId, e.getMessage());
         }
         return "Unknown Visitor";
+    }
+
+    // Magic Link Generation Methods
+    private String generateMagicLink(UUID userId, String userRole) {
+        try {
+            // Fetch user details to get actual email and role
+            String email = userClient.getUserEmail(userId);
+            if (email == null) {
+                logger.warn("Could not resolve email for userId: {}", userId);
+                return null; // No magic link if we can't get email
+            }
+
+            // Generate 30-minute magic token
+            String magicToken = jwtUtils.generateMagicLinkToken(userId, email, userRole);
+
+            // Route to appropriate dashboard based on role
+            String path = userRole.equalsIgnoreCase("LANDLORD") ? landlordPath : tenantPath;
+            return baseUrl + "/" + path + "?token=" + magicToken;
+
+        } catch (Exception e) {
+            logger.warn("Failed to generate magic link for user {}: {}", userId, e.getMessage());
+            return null; // Return null if magic link generation fails
+        }
+    }
+
+    private String generateMagicLinkButton(String eventType, boolean isVisitor, String magicLink) {
+        if (magicLink == null) {
+            return ""; // No button if magic link generation failed
+        }
+
+        String buttonText = getButtonText(eventType, isVisitor);
+        String buttonColor = getButtonColor(eventType);
+
+        return String.format("""
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="%s"
+                   style="background-color: %s; color: white; padding: 12px 30px; text-decoration: none;
+                          border-radius: 5px; font-weight: bold; display: inline-block; margin: 10px;">
+                    %s
+                </a>
+            </div>
+            <p style="font-size: 12px; color: #666; text-align: center;">
+                ✨ One-click access - no login required! Link expires in 30 minutes.
+            </p>
+            """, magicLink, buttonColor, buttonText);
+    }
+
+    private String getButtonText(String eventType, boolean isVisitor) {
+        return switch (eventType) {
+            case "VISIT_REQUESTED" -> isVisitor ? "📱 Track Request" : "🏠 Review & Approve";
+            case "VISIT_APPROVED" -> "📅 View Visit Details";
+            case "VISIT_REJECTED" -> "🔍 Find Other Properties";
+            case "VISIT_REMINDER" -> isVisitor ? "📍 Get Directions" : "👥 Prepare for Visit";
+            case "FEEDBACK_PROMPT" -> "💬 Share Feedback";
+            default -> "🚀 Open Dashboard";
+        };
+    }
+
+    private String getButtonColor(String eventType) {
+        return switch (eventType) {
+            case "VISIT_REQUESTED" -> "#2b5adc"; // ZenNest blue
+            case "VISIT_APPROVED" -> "#28a745";  // Success green
+            case "VISIT_REJECTED" -> "#6c757d";  // Neutral gray
+            case "VISIT_REMINDER" -> "#ffc107";  // Warning yellow
+            case "FEEDBACK_PROMPT" -> "#17a2b8"; // Info blue
+            default -> "#2b5adc";
+        };
     }
     @Override
     public void sendVisitRequested(Visit visit) {
@@ -432,5 +527,56 @@ public class NotificationPublisherImpl implements NotificationPublisher {
                 <p>Your guest %s is scheduled to arrive at <b>%s</b> on <b>%s</b> (in about %d hour%s).</p>
                 <p>Please ensure the property is ready for their stay.</p>
                 """, landlordName, tenantName, propertyTitle, start, hoursBefore, hoursBefore == 1 ? "" : "s");
+    }
+
+    // --- Admin Notification Methods ---
+    @Override
+    public void sendAdminNotification(String toEmail, String subject, String message) {
+        try {
+            String htmlContent = String.format("""
+                <h2 style="color:#dc3545;">🔧 ZenNest Admin Notification</h2>
+                <div style="background-color:#f8f9fa; padding:15px; border-left:4px solid #dc3545; margin:10px 0;">
+                    <h3 style="margin-top:0;">%s</h3>
+                    <p style="margin:0;">%s</p>
+                </div>
+                <p style="font-size:12px; color:#666; margin-top:20px;">
+                    📅 Timestamp: %s<br>
+                    🤖 Automated system notification
+                </p>
+                """, subject, message, java.time.OffsetDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z")));
+
+            emailService.sendEmail(toEmail, "[ZenNest Admin] " + subject, htmlContent);
+            logger.info("Admin notification sent to {}: {}", toEmail, subject);
+        } catch (Exception e) {
+            logger.error("Failed to send admin notification to {}: {}", toEmail, e.getMessage());
+        }
+    }
+
+    @Override
+    public void sendAdminHealthReport(String toEmail, String reportContent) {
+        try {
+            String subject = "ZenNest Daily Health Report - " + java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy"));
+
+            String htmlContent = String.format("""
+                <h2 style="color:#28a745;">📊 ZenNest System Health Report</h2>
+                <div style="background-color:#f8f9fa; padding:20px; border:1px solid #dee2e6; border-radius:5px; font-family:monospace;">
+                    <pre style="margin:0; white-space:pre-wrap; font-size:13px;">%s</pre>
+                </div>
+                <div style="margin-top:20px; padding:15px; background-color:#e7f3ff; border-left:4px solid #0066cc;">
+                    <p style="margin:0; color:#0066cc; font-weight:bold;">
+                        ✅ System Status: All schedulers operating normally
+                    </p>
+                </div>
+                <p style="font-size:12px; color:#666; margin-top:20px;">
+                    🤖 This is an automated daily report from the ZenNest system monitoring.<br>
+                    📧 For alerts or issues, check the cleanup notification emails.
+                </p>
+                """, reportContent);
+
+            emailService.sendEmail(toEmail, subject, htmlContent);
+            logger.info("Daily health report sent to admin: {}", toEmail);
+        } catch (Exception e) {
+            logger.error("Failed to send health report to admin {}: {}", toEmail, e.getMessage());
+        }
     }
 }

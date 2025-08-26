@@ -17,4 +17,9 @@ public interface VisitRepository extends JpaRepository<Visit, UUID> {
     List<Visit> findByStatus(Status status);
     List<Visit> findByStatusAndScheduledAtBetween(Status status, OffsetDateTime start, OffsetDateTime end);
     List<Visit> findByStatusAndScheduledAtBefore(Status status, OffsetDateTime time);
+
+    // Cleanup methods
+    List<Visit> findByStatusAndCreatedAtBefore(Status status, OffsetDateTime cutoffTime);
+    long countByStatus(Status status);
+    long countByStatusAndUpdatedAtAfter(Status status, OffsetDateTime after);
 }

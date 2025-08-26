@@ -18,6 +18,7 @@ public class GlobalCorsConfig {
                                 "https://zennest.live",
                                 "https://zennest.dev",
                                 "http://localhost:5173",
+
                                 "https://zennest.africa"
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")

@@ -171,4 +171,48 @@ public class ShortletUnifiedController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+    // TENANT BOOKING HISTORY
+    @GetMapping("/bookings/tenant/{tenantId}")
+    public ResponseEntity<List<ShortletBookingDTO>> getTenantBookings(
+            @PathVariable UUID tenantId,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int limit,
+            @RequestParam(required = false) String status) {
+
+        List<ShortletBookingDTO> bookings = bookingService.getTenantBookings(tenantId, page, limit, status);
+        return ResponseEntity.ok(bookings);
+    }
+
+    // GET SINGLE BOOKING BY ID
+    @GetMapping("/bookings/details/{bookingId}")
+    public ResponseEntity<ShortletBookingDTO> getBookingById(@PathVariable UUID bookingId) {
+        ShortletBookingDTO booking = bookingService.getBookingById(bookingId);
+        if (booking == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(booking);
+    }
+
+    // CREATE NEW BOOKING
+
+
+    // UPDATE BOOKING STATUS
+    @PutMapping("/bookings/{bookingId}/status")
+    public ResponseEntity<ShortletBookingDTO> updateBookingStatus(
+            @PathVariable UUID bookingId,
+            @RequestBody Map<String, String> body) {
+
+        String status = body.get("status");
+        switch (status.toLowerCase()) {
+            case "confirmed":
+                return ResponseEntity.ok(bookingService.acceptBooking(bookingId));
+            case "cancelled":
+                return ResponseEntity.ok(bookingService.cancelBooking(bookingId));
+            case "rejected":
+                return ResponseEntity.ok(bookingService.rejectBooking(bookingId));
+            default:
+                return ResponseEntity.badRequest().build();
+        }
+    }
 }

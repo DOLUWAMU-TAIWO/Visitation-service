@@ -104,6 +104,77 @@ public class ShortletBookingServiceImpl implements ShortletBookingService {
                 .collect(Collectors.toList());
     }
 
+    // NEW MISSING METHODS FOR TENANT FUNCTIONALITY
+    @Override
+    public List<ShortletBookingDTO> getTenantBookings(UUID tenantId, int page, int limit, String status) {
+        if (tenantId == null) {
+            throw new IllegalArgumentException("tenantId cannot be null");
+        }
+
+        List<ShortletBooking> bookings = bookingRepository.findByTenantId(tenantId);
+
+        // Filter by status if provided
+        if (status != null && !status.equalsIgnoreCase("all")) {
+            try {
+                BookingStatus bookingStatus = BookingStatus.valueOf(status.toUpperCase());
+                bookings = bookings.stream()
+                    .filter(b -> b.getStatus() == bookingStatus)
+                    .collect(Collectors.toList());
+            } catch (IllegalArgumentException e) {
+                // Invalid status, return empty list or all bookings
+                bookings = bookings; // Keep all bookings if status is invalid
+            }
+        }
+
+        // Apply pagination
+        return bookings.stream()
+                .skip((long) page * limit)
+                .limit(limit)
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public ShortletBookingDTO getBookingById(UUID bookingId) {
+        if (bookingId == null) {
+            throw new IllegalArgumentException("bookingId cannot be null");
+        }
+
+        Optional<ShortletBooking> booking = bookingRepository.findById(bookingId);
+        return booking.map(this::toDTO).orElse(null);
+    }
+
+    @Override
+    public List<ShortletBookingDTO> getAllBookings(int page, int limit, String status, LocalDate dateFrom, LocalDate dateTo) {
+        List<ShortletBooking> bookings = bookingRepository.findAll();
+
+        // Filter by status if provided
+        if (status != null && !status.equalsIgnoreCase("all")) {
+            try {
+                BookingStatus bookingStatus = BookingStatus.valueOf(status.toUpperCase());
+                bookings = bookings.stream()
+                    .filter(b -> b.getStatus() == bookingStatus)
+                    .collect(Collectors.toList());
+            } catch (IllegalArgumentException e) {
+                // Invalid status, keep all bookings
+            }
+        }
+
+        // Filter by date range if provided
+        if (dateFrom != null && dateTo != null) {
+            bookings = bookings.stream()
+                .filter(b -> !b.getStartDate().isBefore(dateFrom) && !b.getEndDate().isAfter(dateTo))
+                .collect(Collectors.toList());
+        }
+
+        // Apply pagination
+        return bookings.stream()
+                .skip((long) page * limit)
+                .limit(limit)
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
     private boolean isAllowedTransition(BookingStatus from, BookingStatus to) {
         return switch (from) {
             case PENDING -> to == BookingStatus.ACCEPTED || to == BookingStatus.REJECTED || to == BookingStatus.CANCELLED || to == BookingStatus.RESCHEDULED;

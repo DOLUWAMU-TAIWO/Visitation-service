@@ -13,4 +13,9 @@ public interface ShortletBookingService {
     ShortletBookingDTO cancelBooking(UUID bookingId);
     ShortletBookingDTO rescheduleBooking(UUID bookingId, LocalDate newStartDate, LocalDate newEndDate);
     ShortletBookingDTO updateBookingPayment(UUID bookingId, String paymentStatus, String paymentReference, Double paymentAmount);
+
+    // NEW MISSING METHODS FOR TENANT FUNCTIONALITY
+    List<ShortletBookingDTO> getTenantBookings(UUID tenantId, int page, int limit, String status);
+    ShortletBookingDTO getBookingById(UUID bookingId);
+    List<ShortletBookingDTO> getAllBookings(int page, int limit, String status, LocalDate dateFrom, LocalDate dateTo);
 }

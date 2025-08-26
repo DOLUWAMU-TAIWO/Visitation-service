@@ -107,8 +107,22 @@ public class ShortletAvailabilityServiceImpl implements ShortletAvailabilityServ
 
     @Override
     public boolean isAvailable(UUID landlordId, UUID propertyId, LocalDate startDate, LocalDate endDate) {
-        return !availabilityRepository.existsByLandlordIdAndPropertyIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                landlordId, propertyId, endDate, startDate);
+        // Check if there's an availability slot that completely covers the requested range
+        // AND no accepted bookings overlap with the requested range
+
+        // Step 1: Check if there's complete availability coverage
+        boolean hasCompleteAvailability = availabilityRepository.existsByLandlordIdAndPropertyIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                landlordId, propertyId, startDate, endDate); // Fixed parameter order
+
+        if (!hasCompleteAvailability) {
+            return false;
+        }
+
+        // Step 2: Check if there are any accepted bookings overlapping the requested range
+        List<UUID> bookedPropertyIds = bookingRepository.findAcceptedBookedPropertyIdsInRange(startDate, endDate);
+        boolean hasOverlappingBooking = bookedPropertyIds.contains(propertyId);
+
+        return !hasOverlappingBooking;
     }
 
     @Override

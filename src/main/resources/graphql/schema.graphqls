@@ -14,6 +14,10 @@ type Query {
     visitsByVisitor(visitorId: ID!): [Visit!]!
     visitsByLandlord(landlordId: ID!): [Visit!]!
 
+    # Dashboard analytics queries - ADDED
+    tenantDashboardStats(tenantId: ID!): DashboardStats!
+    landlordDashboardStats(landlordId: ID!): DashboardStats!
+
     # User queries - can be expanded based on needs
     tenant(id: ID!): User
     landlord(id: ID!): User
@@ -61,13 +65,22 @@ input BookingInput {
     propertyId: ID!
     startDate: String!
     endDate: String!
+    # Adding missing required fields from ShortletBooking model
+    firstName: String!
+    lastName: String!
+    phoneNumber: String!
 }
 
 input VisitInput {
     propertyId: ID!
     visitorId: ID!
     landlordId: ID!
-    scheduledDate: String!
+    # Changed from scheduledDate to scheduledAt to match Java model
+    scheduledAt: String!
+    # Adding missing fields from Visit model
+    durationMinutes: Int
+    notes: String
+    slotId: ID
     status: VisitStatus
 }
 
@@ -115,6 +128,15 @@ type Booking {
     endDate: String!
     status: BookingStatus!
     nights: Int!
+    # Adding missing fields from ShortletBooking model
+    firstName: String!
+    lastName: String!
+    phoneNumber: String!
+    paymentStatus: PaymentStatus
+    paymentReference: String
+    paymentAmount: Float
+    reminder24hSent: Boolean!
+    reminder1hSent: Boolean!
 }
 
 type Visit {
@@ -122,8 +144,18 @@ type Visit {
     propertyId: ID!
     visitorId: ID!
     landlordId: ID!
-    scheduledDate: String!
+    # Changed from scheduledDate to scheduledAt to match Java model
+    scheduledAt: String
     status: VisitStatus!
+    # Adding missing fields from Visit model
+    durationMinutes: Int
+    notes: String
+    slotId: ID
+    rescheduledFromId: ID
+    createdAt: String
+    updatedAt: String
+    # Keeping scheduledDate for backward compatibility
+    scheduledDate: String
 }
 
 type User {
@@ -147,22 +179,53 @@ type CalendarView {
     bookings: [Booking!]!
 }
 
-# Enums
+# Dashboard Stats type matching our DTO structure
+type DashboardStats {
+    totalVisits: Int
+    pendingVisits: Int
+    upcomingVisits: Int
+    totalBookings: Int
+    activeBookings: Int
+    favoriteProperties: Int
+    totalSpent: Float
+    nextPaymentDue: String      # Date string
+    nextVisitDate: String       # Date string
+    visitStats: VisitStatsBreakdown
+    bookingStats: BookingStatsBreakdown
+}
+
+type VisitStatsBreakdown {
+    approved: Int
+    rejected: Int
+    completed: Int
+    cancelled: Int
+}
+
+type BookingStatsBreakdown {
+    confirmed: Int
+    pending: Int
+    completed: Int
+    cancelled: Int
+}
+
+# Enums - Fixed to match Java models exactly
 enum BookingStatus {
     PENDING
     ACCEPTED
     REJECTED
     CANCELLED
     RESCHEDULED
+    NO_SHOW
 }
 
+# Fixed to match your Java Status enum exactly
 enum VisitStatus {
     PENDING
     APPROVED
     REJECTED
     CANCELLED
-    COMPLETED
     RESCHEDULED
+    COMPLETED
 }
 
 enum PaymentStatus {

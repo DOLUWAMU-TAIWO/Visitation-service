@@ -130,4 +130,80 @@ public class UserGraphQLClient {
             throw new ExternalServiceException("Failed to fetch user details for " + userId, e);
         }
     }
+
+    @SuppressWarnings("unchecked")
+    public UserDTO getUserById(UUID userId) {
+        String query = """
+        query getUserById($id: ID!) {
+            getUserById(id: $id) {
+                id
+                firstName
+                lastName
+                email
+                role
+            }
+        }
+        """;
+        try {
+            Map<String, Object> userMap = (Map<String, Object>) graphQlClient.document(query)
+                    .variable("id", userId.toString())
+                    .retrieve("getUserById")
+                    .toEntity(Map.class)
+                    .block();
+
+            if (userMap == null) {
+                return null;
+            }
+
+            String idStr = (String) userMap.get("id");
+            String firstName = (String) userMap.get("firstName");
+            String lastName = (String) userMap.get("lastName");
+            String email = (String) userMap.get("email");
+            String role = (String) userMap.get("role");
+
+            UUID id = idStr != null ? UUID.fromString(idStr) : userId;
+            return new UserDTO(id, firstName, lastName, email, role);
+        } catch (Exception e) {
+            logger.error("Error retrieving user by ID {}: {}", userId, e.getMessage());
+            throw new ExternalServiceException("Failed to fetch user by ID " + userId, e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public UserDTO getUserByEmail(String email) {
+        String query = """
+        query getUserByEmail($email: String!) {
+            getUserByEmail(email: $email) {
+                id
+                firstName
+                lastName
+                email
+                role
+            }
+        }
+        """;
+        try {
+            Map<String, Object> userMap = (Map<String, Object>) graphQlClient.document(query)
+                    .variable("email", email)
+                    .retrieve("getUserByEmail")
+                    .toEntity(Map.class)
+                    .block();
+
+            if (userMap == null) {
+                return null;
+            }
+
+            String idStr = (String) userMap.get("id");
+            String firstName = (String) userMap.get("firstName");
+            String lastName = (String) userMap.get("lastName");
+            String userEmail = (String) userMap.get("email");
+            String role = (String) userMap.get("role");
+
+            UUID id = idStr != null ? UUID.fromString(idStr) : null;
+            return new UserDTO(id, firstName, lastName, userEmail, role);
+        } catch (Exception e) {
+            logger.error("Error retrieving user by email {}: {}", email, e.getMessage());
+            throw new ExternalServiceException("Failed to fetch user by email " + email, e);
+        }
+    }
 }

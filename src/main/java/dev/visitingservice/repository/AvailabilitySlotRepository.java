@@ -22,4 +22,8 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
 
     // Method for calendar view
     List<AvailabilitySlot> findByPropertyIdAndStartTimeGreaterThanEqualAndEndTimeLessThanEqual(UUID propertyId, OffsetDateTime start, OffsetDateTime end);
+
+    // Cleanup method
+    int deleteByEndTimeBefore(OffsetDateTime cutoffTime);
+    List<AvailabilitySlot> findByEndTimeBefore(OffsetDateTime cutoffTime);
 }

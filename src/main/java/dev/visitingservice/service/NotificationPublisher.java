@@ -16,4 +16,8 @@ public interface NotificationPublisher {
     void sendBookingCancelled(ShortletBooking booking);
     void sendBookingReminder(ShortletBooking booking, int hoursBefore);
     void sendBookingRescheduled(ShortletBooking booking);
+
+    // Admin notification methods
+    void sendAdminNotification(String toEmail, String subject, String message);
+    void sendAdminHealthReport(String toEmail, String reportContent);
 }
