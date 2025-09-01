@@ -2,9 +2,11 @@ package dev.visitingservice.repository;
 
 import dev.visitingservice.model.ShortletAvailability;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import jakarta.persistence.LockModeType;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -19,4 +21,9 @@ public interface ShortletAvailabilityRepository extends JpaRepository<ShortletAv
     List<ShortletAvailability> findByLandlordIdAndPropertyIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(UUID landlordId, UUID propertyId, LocalDate endDate, LocalDate startDate);
     @Query("SELECT DISTINCT s.propertyId FROM ShortletAvailability s WHERE s.startDate <= :desiredStart AND s.endDate >= :desiredEnd")
     List<UUID> findPropertyIdsWithAvailabilityInRange(@Param("desiredStart") LocalDate desiredStart, @Param("desiredEnd") LocalDate desiredEnd);
+
+    // NEW: Pessimistic locking method for concurrency control
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM ShortletAvailability s WHERE s.landlordId = :landlordId AND s.propertyId = :propertyId")
+    List<ShortletAvailability> findByLandlordIdAndPropertyIdWithLock(@Param("landlordId") UUID landlordId, @Param("propertyId") UUID propertyId);
 }

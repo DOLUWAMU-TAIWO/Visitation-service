@@ -3,14 +3,17 @@ package dev.visitingservice.repository;
 import dev.visitingservice.model.ShortletBooking;
 import dev.visitingservice.model.ShortletBooking.BookingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
 
 @Repository
 public interface ShortletBookingRepository extends JpaRepository<ShortletBooking, UUID> {
@@ -51,9 +54,15 @@ public interface ShortletBookingRepository extends JpaRepository<ShortletBooking
     // Additional method for optimized BookingScheduler
     List<ShortletBooking> findByStatusAndStartDate(BookingStatus status, LocalDate startDate);
 
-    // Method for manual property-specific reminders
-    List<ShortletBooking> findByPropertyIdAndLandlordIdAndStatusAndStartDateGreaterThanEqualAndStartDateLessThanEqual(
-        UUID propertyId, UUID landlordId, BookingStatus status, LocalDate fromDate, LocalDate toDate);
+    // NEW: Pessimistic locking methods for concurrency control
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM ShortletBooking b WHERE b.landlordId = :landlordId AND b.propertyId = :propertyId")
+    List<ShortletBooking> findByLandlordIdAndPropertyIdWithLock(@Param("landlordId") UUID landlordId, @Param("propertyId") UUID propertyId);
 
+    // NEW: Idempotency check method
+    @Query("SELECT b FROM ShortletBooking b WHERE b.tenantId = :tenantId AND b.landlordId = :landlordId AND b.propertyId = :propertyId AND b.startDate = :startDate AND b.endDate = :endDate AND b.status = 'PENDING'")
+    Optional<ShortletBooking> findExistingPendingBooking(@Param("tenantId") UUID tenantId, @Param("landlordId") UUID landlordId, @Param("propertyId") UUID propertyId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    // NEW: Find by property ID method
     List<ShortletBooking> findByPropertyId(UUID propertyId);
 }

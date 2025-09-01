@@ -14,6 +14,8 @@ import dev.visitingservice.service.VisitValidationService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -22,6 +24,8 @@ import java.util.UUID;
 
 @Service
 public class VisitServiceImpl implements VisitService {
+
+    private static final Logger logger = LoggerFactory.getLogger(VisitServiceImpl.class);
 
     @Autowired
     private VisitRepository visitRepository;
@@ -143,7 +147,29 @@ public class VisitServiceImpl implements VisitService {
                 releaseSlotIfExists(visit);
                 notificationPublisher.sendVisitCancelled(updated);
             }
-            case COMPLETED -> notificationPublisher.sendFeedbackPrompt(updated);
+            case COMPLETED -> {
+                // Only send feedback email if it hasn't been sent already
+                if (!updated.isFeedbackEmailSent()) {
+                    logger.info("📧 Attempting to send feedback prompt notification for visit {}", visitId);
+
+                    try {
+                        notificationPublisher.sendFeedbackPrompt(updated);
+                        logger.info("✅ Feedback email sent successfully for visit {}", visitId);
+                    } catch (Exception emailError) {
+                        logger.error("⚠️ Failed to send feedback email for visit {}: {}",
+                            visitId, emailError.getMessage());
+                        // Don't rethrow - we still want to mark it as attempted
+                    }
+
+                    // ALWAYS mark feedback email as sent/attempted, regardless of success/failure
+                    updated.setFeedbackEmailSent(true);
+                    visitRepository.save(updated);
+
+                    logger.info("🏷️ Feedback email marked as sent for visit {} (prevents future attempts)", visitId);
+                } else {
+                    logger.info("⏭️ Skipping feedback email for visit {} - already sent", visitId);
+                }
+            }
             default -> {}
         }
 

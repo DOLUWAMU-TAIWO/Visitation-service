@@ -40,14 +40,17 @@ public class ShortletBooking {
     @Column(name = "reminder_1h_sent")
     private Boolean reminder1hSent = false;
 
-    @Column(name = "first_name", nullable = false)
+    @Column(name = "first_name")
     private String firstName;
 
-    @Column(name = "last_name", nullable = false)
+    @Column(name = "last_name")
     private String lastName;
 
-    @Column(name = "phone_number", nullable = false)
+    @Column(name = "phone_number")
     private String phoneNumber;
+
+    @Column(name = "guest_number")
+    private Integer guestNumber;
 
     public enum BookingStatus {
         PENDING, ACCEPTED, REJECTED, CANCELLED, RESCHEDULED, NO_SHOW
@@ -72,6 +75,15 @@ public class ShortletBooking {
 
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
+
+    @Column(name = "tenant_email")
+    private String tenantEmail;
+
+    @Column(name = "total_amount")
+    private java.math.BigDecimal totalAmount;
+
+    @Column(name = "currency")
+    private String currency;
 
     @PrePersist
     protected void onCreate() {
@@ -166,6 +178,15 @@ public class ShortletBooking {
     public PaymentStatus getPaymentStatus() {
         return paymentStatus;
     }
+
+    public Integer getGuestNumber() {
+        return guestNumber;
+    }
+
+    public void setGuestNumber(Integer guestNumber) {
+        this.guestNumber = guestNumber;
+    }
+
     public void setPaymentStatus(PaymentStatus paymentStatus) {
         this.paymentStatus = paymentStatus;
     }
@@ -196,5 +217,30 @@ public class ShortletBooking {
 
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    // NEW: getters and setters for payment service fields
+    public String getTenantEmail() {
+        return tenantEmail;
+    }
+
+    public void setTenantEmail(String tenantEmail) {
+        this.tenantEmail = tenantEmail;
+    }
+
+    public java.math.BigDecimal getTotalAmount() {
+        return totalAmount;
+    }
+
+    public void setTotalAmount(java.math.BigDecimal totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
     }
 }

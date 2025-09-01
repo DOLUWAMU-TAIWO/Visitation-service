@@ -25,7 +25,7 @@ public class Visit {
     private OffsetDateTime updatedAt;
     private String notes;
     private UUID slotId;
-
+    private boolean feedbackEmailSent = false;
 
     @PrePersist
     protected void onCreate() {
@@ -63,4 +63,6 @@ public class Visit {
     public void setNotes(String notes) { this.notes = notes; }
     public UUID getSlotId() { return slotId; }
     public void setSlotId(UUID slotId) { this.slotId = slotId; }
+    public boolean isFeedbackEmailSent() { return feedbackEmailSent; }
+    public void setFeedbackEmailSent(boolean feedbackEmailSent) { this.feedbackEmailSent = feedbackEmailSent; }
 }

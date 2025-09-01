@@ -11,6 +11,8 @@ import java.util.UUID;
 
 @Repository
 public interface VisitRepository extends JpaRepository<Visit, UUID> {
+    
+    // ========== STANDARD QUERIES (Working and Tested) ==========
     List<Visit> findByPropertyId(UUID propertyId);
     List<Visit> findByVisitorId(UUID visitorId);
     List<Visit> findByLandlordId(UUID landlordId);

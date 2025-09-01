@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ShortletBookingService {
-    ShortletBookingDTO createBooking(UUID tenantId, UUID landlordId, UUID propertyId, LocalDate startDate, LocalDate endDate, String firstName, String lastName, String phoneNumber);
+    ShortletBookingDTO createBooking(UUID tenantId, UUID landlordId, UUID propertyId, LocalDate startDate, LocalDate endDate, String firstName, String lastName, String phoneNumber, Integer guestNumber, String email, Double amount, String currency, String sessionId, String userAgent, String sourceIP);
     List<ShortletBookingDTO> getBookings(UUID landlordId, int page, int size);
     ShortletBookingDTO acceptBooking(UUID bookingId);
     ShortletBookingDTO rejectBooking(UUID bookingId);

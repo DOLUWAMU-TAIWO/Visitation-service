@@ -120,7 +120,22 @@ public class BookingGraphQLController {
         String firstName = input.get("firstName");
         String lastName = input.get("lastName");
         String phoneNumber = input.get("phoneNumber");
-        return bookingService.createBooking(tenantId, landlordId, propertyId, startDate, endDate, firstName, lastName, phoneNumber);
+        Integer guestNumber = input.get("guestNumber") != null ? Integer.parseInt(input.get("guestNumber")) : null;
+
+        // NEW: Parse payment service fields
+        String email = input.get("email");
+        Double amount = input.get("amount") != null ? Double.parseDouble(input.get("amount")) : null;
+        String currency = input.getOrDefault("currency", "NGN");
+
+        // For GraphQL, provide default context values since we don't have direct HTTP request access
+        String sessionId = "graphql-session-" + UUID.randomUUID().toString();
+        String userAgent = "GraphQL-Client";
+        String sourceIP = "unknown";
+
+        return bookingService.createBooking(tenantId, landlordId, propertyId, startDate, endDate,
+                                          firstName, lastName, phoneNumber, guestNumber,
+                                          email, amount, currency,  // Add the new parameters
+                                          sessionId, userAgent, sourceIP);
     }
 
     @MutationMapping

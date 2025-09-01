@@ -62,17 +62,38 @@ public class NotificationPublisherImpl implements NotificationPublisher {
             default -> new UUID[]{visit.getVisitorId()};
         };
 
+        boolean atLeastOneEmailSent = false;
+        int failedEmails = 0;
+
         for (UUID userId : recipients) {
-            System.out.println("📧 Resolving email for userId: " + userId);
-            String recipientEmail = userClient.getUserEmail(userId);
-            if (recipientEmail != null) {
-                String content = getContent(type, visit, extra, userId); // ✨ Pass userId here
-                emailService.sendEmail(recipientEmail, subject, content);
-                System.out.println("✅ Email sent to " + recipientEmail + " for event type: " + type);
-            } else {
-                System.err.println("⚠️ Unable to resolve email for user " + userId + " — skipping notification.");
+            try {
+                logger.info("📧 Resolving email for userId: {}", userId);
+                String recipientEmail = userClient.getUserEmail(userId);
+
+                if (recipientEmail != null) {
+                    String content = getContent(type, visit, extra, userId);
+                    emailService.sendEmail(recipientEmail, subject, content);
+                    logger.info("✅ Email sent to {} for event type: {}", recipientEmail, type);
+                    atLeastOneEmailSent = true;
+                } else {
+                    logger.warn("⚠️ Unable to resolve email for user {} — user may have been deleted. Skipping notification.", userId);
+                    failedEmails++;
+                }
+            } catch (Exception e) {
+                logger.error("❌ Failed to send email to user {}: {}", userId, e.getMessage());
+                failedEmails++;
+                // Don't throw exception - continue with other recipients
             }
         }
+
+        // Log summary but don't fail the entire operation
+        if (atLeastOneEmailSent) {
+            logger.info("📊 Email summary for {}: {} sent, {} failed", type, (recipients.length - failedEmails), failedEmails);
+        } else {
+            logger.warn("⚠️ No emails were sent for {} - all recipients failed", type);
+        }
+
+        // Never throw an exception from this method to prevent transaction rollback
     }
 
     private String getSubject(String type) {

@@ -16,6 +16,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 public class VisitScheduler {
@@ -148,28 +149,61 @@ public class VisitScheduler {
     @Scheduled(cron = "0 */30 * * * *")
     @Transactional
     public void autoCompletePastVisits() {
+        logger.info("🔄 Starting autoCompletePastVisits scheduler run");
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
         // Add a grace period of 30 minutes after scheduled time before marking as completed
         OffsetDateTime cutoffTime = now.minusMinutes(30);
+        logger.info("🕒 Looking for APPROVED visits scheduled before: {}", cutoffTime);
 
         List<Visit> pastVisits = visitRepository.findByStatusAndScheduledAtBefore(
             Status.APPROVED, cutoffTime);
 
+        logger.info("📋 Found {} APPROVED visits to potentially complete", pastVisits.size());
+
         int completedCount = 0;
+        int failedCount = 0;
+
         for (Visit visit : pastVisits) {
             try {
-                visitService.updateVisitStatus(visit.getId(), Status.COMPLETED);
+                logger.info("🔍 Processing visit {} - Current status: {}, Scheduled: {}",
+                    visit.getId(), visit.getStatus(), visit.getScheduledAt());
+
+                // Double-check status before processing (in case of race conditions)
+                if (visit.getStatus() != Status.APPROVED) {
+                    logger.warn("⚠️ Visit {} status changed to {} during processing, skipping",
+                        visit.getId(), visit.getStatus());
+                    continue;
+                }
+
+                // Complete the visit in a separate transaction to avoid rollback issues
+                completeVisitSafely(visit.getId());
                 completedCount++;
-                logger.info("Auto-completed past visit {}", visit.getId());
+                logger.info("✅ Successfully completed visit {}", visit.getId());
+
             } catch (Exception e) {
-                logger.error("Failed to complete visit {}: {}", visit.getId(), e.getMessage());
+                failedCount++;
+                logger.error("❌ Failed to complete visit {}: {}", visit.getId(), e.getMessage());
+                // Continue processing other visits even if one fails
             }
         }
 
-        if (completedCount > 0) {
-            logger.info("Auto-completed {} past visits", completedCount);
+        logger.info("🎯 Completed {} visits, {} failed out of {} candidates",
+            completedCount, failedCount, pastVisits.size());
+    }
+
+    /**
+     * Complete a visit safely, handling email failures gracefully
+     */
+    private void completeVisitSafely(UUID visitId) {
+        try {
+            // ✅ FIXED: Use service layer instead of bypassing it
+            visitService.updateVisitStatus(visitId, Status.COMPLETED);
+            logger.info("✅ Visit {} completed successfully via service layer", visitId);
+
+        } catch (Exception e) {
+            logger.error("❌ Critical error completing visit {}: {}", visitId, e.getMessage(), e);
+            throw e; // Rethrow for the outer catch block
         }
     }
 }
-

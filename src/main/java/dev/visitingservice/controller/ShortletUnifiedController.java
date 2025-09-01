@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -98,7 +99,8 @@ public class ShortletUnifiedController {
 
     // --- Booking Endpoints ---
     @PostMapping("/bookings")
-    public ResponseEntity<?> createBooking(@RequestBody Map<String, String> body) {
+    public ResponseEntity<?> createBooking(@RequestBody Map<String, String> body,
+                                           HttpServletRequest request) {
         try {
             UUID tenantId = UUID.fromString(body.get("tenantId"));
             UUID landlordId = UUID.fromString(body.get("landlordId"));
@@ -108,7 +110,25 @@ public class ShortletUnifiedController {
             String firstName = body.get("firstName");
             String lastName = body.get("lastName");
             String phoneNumber = body.get("phoneNumber");
-            ShortletBookingDTO dto = bookingService.createBooking(tenantId, landlordId, propertyId, startDate, endDate, firstName, lastName, phoneNumber);
+            Integer guestNumber = body.get("guestNumber") != null ? Integer.parseInt(body.get("guestNumber")) : null;
+
+            // 👇 NEW fields
+            String email = body.get("email");
+            Double amount = body.get("amount") != null ? Double.parseDouble(body.get("amount")) : null;
+            String currency = body.getOrDefault("currency", "NGN");
+
+            // Context info
+            String sessionId = request.getSession().getId();
+            String userAgent = request.getHeader("User-Agent");
+            String sourceIP = request.getRemoteAddr();
+
+            ShortletBookingDTO dto = bookingService.createBooking(
+                    tenantId, landlordId, propertyId, startDate, endDate,
+                    firstName, lastName, phoneNumber, guestNumber,
+                    email, amount, currency,   // 👈 pass them
+                    sessionId, userAgent, sourceIP
+            );
+
             return ResponseEntity.ok(dto);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
