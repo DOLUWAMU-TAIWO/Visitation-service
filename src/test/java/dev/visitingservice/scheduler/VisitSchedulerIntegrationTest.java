@@ -214,7 +214,7 @@ class VisitSchedulerIntegrationTest {
     void testDatabaseTransactionFailure() {
         // Given: Mock repository to simulate database failure
         VisitRepository mockRepo = mock(VisitRepository.class);
-        when(mockRepo.findByStatusAndScheduledAtBeforeWithSlot(any(), any()))
+        when(mockRepo.findByStatusAndScheduledAtBefore(any(), any()))
             .thenReturn(List.of(testVisit));
         when(mockRepo.findById(testVisit.getId()))
             .thenReturn(Optional.of(testVisit));

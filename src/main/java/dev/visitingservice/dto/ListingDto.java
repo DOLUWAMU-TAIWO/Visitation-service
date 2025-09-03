@@ -16,7 +16,18 @@ public class ListingDto {
     private String furnishingStatus;
     private java.util.List<String> amenities;
     private java.util.List<String> imageKeys;
-    // Add more fields as needed for your use case
+
+    // Enhanced pricing-related fields from GraphQL schema
+    private BigDecimal pricePerNight;
+    private BigDecimal cleaningFee;
+    private BigDecimal securityAmount;
+    private Integer guestCapacity;
+    private Integer minNights;
+    private Integer maxNights;
+    private String cancellationPolicy;
+    private Boolean instantBooking;
+    private String purpose;
+    private Boolean isShortlet;
 
     public ListingDto() {}
 
@@ -104,6 +115,37 @@ public class ListingDto {
         this.imageKeys = imageKeys;
     }
 
+    // New pricing-related getters and setters
+    public BigDecimal getPricePerNight() { return pricePerNight; }
+    public void setPricePerNight(BigDecimal pricePerNight) { this.pricePerNight = pricePerNight; }
+
+    public BigDecimal getCleaningFee() { return cleaningFee; }
+    public void setCleaningFee(BigDecimal cleaningFee) { this.cleaningFee = cleaningFee; }
+
+    public BigDecimal getSecurityAmount() { return securityAmount; }
+    public void setSecurityAmount(BigDecimal securityAmount) { this.securityAmount = securityAmount; }
+
+    public Integer getGuestCapacity() { return guestCapacity; }
+    public void setGuestCapacity(Integer guestCapacity) { this.guestCapacity = guestCapacity; }
+
+    public Integer getMinNights() { return minNights; }
+    public void setMinNights(Integer minNights) { this.minNights = minNights; }
+
+    public Integer getMaxNights() { return maxNights; }
+    public void setMaxNights(Integer maxNights) { this.maxNights = maxNights; }
+
+    public String getCancellationPolicy() { return cancellationPolicy; }
+    public void setCancellationPolicy(String cancellationPolicy) { this.cancellationPolicy = cancellationPolicy; }
+
+    public Boolean getInstantBooking() { return instantBooking; }
+    public void setInstantBooking(Boolean instantBooking) { this.instantBooking = instantBooking; }
+
+    public String getPurpose() { return purpose; }
+    public void setPurpose(String purpose) { this.purpose = purpose; }
+
+    public Boolean getIsShortlet() { return isShortlet; }
+    public void setIsShortlet(Boolean isShortlet) { this.isShortlet = isShortlet; }
+
     @Override
     public String toString() {
         return "ListingDto{" +
@@ -119,6 +161,16 @@ public class ListingDto {
                 ", furnishingStatus='" + furnishingStatus + '\'' +
                 ", amenities=" + amenities +
                 ", imageKeys=" + imageKeys +
+                ", pricePerNight=" + pricePerNight +
+                ", cleaningFee=" + cleaningFee +
+                ", securityAmount=" + securityAmount +
+                ", guestCapacity=" + guestCapacity +
+                ", minNights=" + minNights +
+                ", maxNights=" + maxNights +
+                ", cancellationPolicy='" + cancellationPolicy + '\'' +
+                ", instantBooking=" + instantBooking +
+                ", purpose='" + purpose + '\'' +
+                ", isShortlet=" + isShortlet +
                 '}';
     }
 }
